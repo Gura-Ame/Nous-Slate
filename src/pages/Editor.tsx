@@ -1,5 +1,7 @@
 // src/pages/Editor.tsx
 import { CreateDeckDialog } from "@/components/editor/CreateDeckDialog";
+import { EditDeckDialog } from "@/components/editor/EditDeckDialog";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -21,16 +23,12 @@ export default function Editor() {
   const { user } = useAuth();
   const [decks, setDecks] = useState<Deck[]>([]);
   const [loading, setLoading] = useState(true);
+  const [editingDeck, setEditingDeck] = useState<Deck | null>(null);
+  const [isEditOpen, setIsEditOpen] = useState(false);
 
-  const toggleVisibility = async (deck: Deck) => {
-    const newStatus = !deck.isPublic;
-    try {
-      await DeckService.updateDeck(deck.id, { isPublic: newStatus });
-      toast.success(newStatus ? "已設為公開" : "已設為私有");
-      fetchDecks(); // 重整列表
-    } catch (error) {
-      toast.error("更新失敗");
-    }
+  const handleEditClick = (deck: Deck) => {
+    setEditingDeck(deck);
+    setIsEditOpen(true);
   };
 
   const fetchDecks = async () => {
@@ -96,19 +94,33 @@ export default function Editor() {
             <Card key={deck.id} className="group hover:shadow-md transition-shadow">
               <CardHeader>
                 <div className="flex items-start justify-between">
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <CardTitle className="text-xl font-bold">{deck.title}</CardTitle> {/* 移除 font-serif */}
+                  <div className="space-y-2 w-full pr-2"> {/* 加寬度與間距 */}
+
+                    {/* Title & Public Badge */}
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <CardTitle className="text-xl font-bold">{deck.title}</CardTitle>
                       {deck.isPublic ? (
-                        <span className="text-[10px] px-1.5 py-0.5 bg-sky-100 text-sky-700 rounded-full flex items-center gap-1">
-                          <Globe className="w-3 h-3" /> 公開
-                        </span>
+                        <Badge variant="secondary" className="text-[10px] h-5 bg-sky-100 text-sky-700 hover:bg-sky-100">
+                          <Globe className="w-3 h-3 mr-1" /> 公開
+                        </Badge>
                       ) : (
-                        <span className="text-[10px] px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded-full flex items-center gap-1">
-                          <LockIcon className="w-3 h-3" /> 私有
-                        </span>
+                        <Badge variant="secondary" className="text-[10px] h-5 bg-slate-100 text-slate-600 hover:bg-slate-100">
+                          <LockIcon className="w-3 h-3 mr-1" /> 私有
+                        </Badge>
                       )}
                     </div>
+
+                    {/* Tags Display (新增) */}
+                    {deck.tags && deck.tags.length > 0 && (
+                      <div className="flex gap-1 flex-wrap">
+                        {deck.tags.map(tag => (
+                          <span key={tag} className="text-[10px] px-1.5 py-0.5 rounded border bg-white dark:bg-slate-950 text-slate-500">
+                            #{tag}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+
                     <CardDescription className="line-clamp-2">
                       {deck.description || "無描述"}
                     </CardDescription>
@@ -116,25 +128,13 @@ export default function Editor() {
 
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                      <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
                         <MoreVertical className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      {/* 切換公開狀態按鈕 */}
-                      <DropdownMenuItem onClick={() => toggleVisibility(deck)}>
-                        {deck.isPublic ? (
-                          <>
-                            <LockIcon className="mr-2 h-4 w-4" /> 設為私有
-                          </>
-                        ) : (
-                          <>
-                            <Globe className="mr-2 h-4 w-4" /> 設為公開
-                          </>
-                        )}
-                      </DropdownMenuItem>
-
-                      <DropdownMenuItem onClick={() => console.log("Edit Info")}>
+                      {/* 修改這裡：點擊觸發 Dialog */}
+                      <DropdownMenuItem onClick={() => handleEditClick(deck)}>
                         <Pen className="mr-2 h-4 w-4" /> 編輯資訊
                       </DropdownMenuItem>
 
@@ -164,6 +164,13 @@ export default function Editor() {
           ))
         )}
       </div>
+      
+      <EditDeckDialog 
+        deck={editingDeck}
+        open={isEditOpen}
+        onOpenChange={setIsEditOpen}
+        onSuccess={fetchDecks} // 更新後重整列表
+      />
     </div>
   );
 }

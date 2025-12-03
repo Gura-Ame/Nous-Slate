@@ -1,7 +1,9 @@
-import { BookOpen, Play, Search, Star, User as UserIcon } from "lucide-react";
+import { BookOpen, Play, Search, Star } from "lucide-react";
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { toast } from "sonner";
 
+import { OwnerInfo } from "@/components/shared/OwnerInfo";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,7 +11,6 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DeckService } from "@/services/deck-service";
 import type { Deck } from "@/types/schema";
-import { Link } from "react-router-dom";
 
 export default function Library() {
   const [decks, setDecks] = useState<Deck[]>([]);
@@ -24,7 +25,6 @@ export default function Library() {
         setDecks(data);
         setFilteredDecks(data);
       } catch (error) {
-        // 注意：這裡可能會遇到 Index Error，稍後說明
         console.error(error);
         toast.error("無法載入公開題庫，請稍後再試");
       } finally {
@@ -34,7 +34,7 @@ export default function Library() {
     loadDecks();
   }, []);
 
-  // 前端搜尋過濾 (因為 Firestore 免費版沒有全文檢索)
+  // 前端搜尋過濾
   useEffect(() => {
     const lowerTerm = searchTerm.toLowerCase();
     const filtered = decks.filter(deck => 
@@ -73,7 +73,7 @@ export default function Library() {
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {loading ? (
           Array.from({ length: 6 }).map((_, i) => (
-            <Skeleton key={i} className="h-[200px] w-full rounded-xl" />
+            <Skeleton key={i} className="h-[220px] w-full rounded-xl" />
           ))
         ) : filteredDecks.length === 0 ? (
           <div className="col-span-full py-12 text-center text-slate-500 border-2 border-dashed rounded-xl bg-slate-50/50 dark:bg-slate-900/50">
@@ -84,42 +84,53 @@ export default function Library() {
         ) : (
           filteredDecks.map((deck) => (
             <Card key={deck.id} className="flex flex-col hover:shadow-lg transition-all hover:-translate-y-1 duration-300 group">
-              <CardHeader className="space-y-1">
+              <CardHeader className="space-y-3 pb-3">
                 <div className="flex justify-between items-start">
-                  <Badge variant="outline" className="mb-2 w-fit">
-                    {deck.tags?.[0] || "一般"}
-                  </Badge>
+                  <CardTitle className="text-xl font-bold group-hover:text-primary transition-colors line-clamp-1">
+                    {deck.title}
+                  </CardTitle>
+                  
                   {deck.stats?.stars > 0 && (
-                    <div className="flex items-center text-amber-500 text-xs font-medium">
+                    <div className="flex items-center text-amber-500 text-xs font-medium bg-amber-50 dark:bg-amber-900/20 px-2 py-1 rounded-full">
                       <Star className="h-3 w-3 mr-1 fill-current" />
                       {deck.stats.stars}
                     </div>
                   )}
                 </div>
-                <CardTitle className="text-xl group-hover:text-primary transition-colors">
-                  {deck.title}
-                </CardTitle>
+
+                {/* 
+                   Tag List 
+                   顯示所有標籤，使用 flex-wrap 避免溢出
+                */}
+                <div className="flex flex-wrap gap-1.5 h-6 overflow-hidden">
+                  {deck.tags && deck.tags.length > 0 ? (
+                    deck.tags.map(tag => (
+                      <Badge key={tag} variant="secondary" className="text-[10px] px-1.5 py-0 font-normal">
+                        #{tag}
+                      </Badge>
+                    ))
+                  ) : (
+                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 font-normal text-muted-foreground border-dashed">
+                      未分類
+                    </Badge>
+                  )}
+                </div>
               </CardHeader>
               
               <CardContent className="flex-1">
-                <p className="text-sm text-muted-foreground line-clamp-3">
+                <p className="text-sm text-muted-foreground line-clamp-3 min-h-[3rem]">
                   {deck.description || "這個題庫沒有描述。"}
                 </p>
               </CardContent>
 
               <CardFooter className="pt-4 border-t bg-slate-50/50 dark:bg-slate-900/50 flex justify-between items-center text-sm">
-                <div className="flex items-center text-muted-foreground">
-                  <UserIcon className="h-3 w-3 mr-2" />
-                  <span className="max-w-[100px] truncate">
-                    {/* 這裡暫時顯示 Owner ID，理想情況要再 fetch User Profile */}
-                    User...{deck.ownerId.slice(-4)}
-                  </span>
-                </div>
+                <OwnerInfo userId={deck.ownerId} />
                 
+                {/* 練習按鈕 */}
                 <Link to={`/quiz/${deck.id}`}>
-                    <Button size="sm" className="gap-2">
-                        <Play className="h-3 w-3" />
-                        練習
+                    <Button size="sm" className="gap-2 shadow-sm">
+                        <Play className="h-3 w-3 fill-current" />
+                        開始練習
                     </Button>
                 </Link>
               </CardFooter>

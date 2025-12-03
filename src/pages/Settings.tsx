@@ -10,7 +10,7 @@ export default function Settings() {
   
   return (
     <div className="container mx-auto p-8 space-y-8 max-w-3xl">
-      <h2 className="text-3xl font-bold font-serif text-slate-900 dark:text-slate-100">
+      <h2 className="text-3xl font-bold text-slate-900 dark:text-slate-100">
         設定
       </h2>
 

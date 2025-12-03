@@ -2,11 +2,19 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
 import { LayoutDashboard, Library, LogOut, PenTool, Settings } from "lucide-react";
-import { Link, Outlet, useLocation } from "react-router-dom";
+import { Link, Navigate, Outlet, useLocation } from "react-router-dom";
 
 export function AppLayout() {
   const { pathname } = useLocation();
-  const { user, logout } = useAuth();
+  const { user, loading, logout } = useAuth();
+
+  if (loading) {
+    return <div className="h-screen w-full flex items-center justify-center">Loading...</div>;
+  }
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
 
   const navItems = [
     { href: "/", label: "儀表板", icon: LayoutDashboard },

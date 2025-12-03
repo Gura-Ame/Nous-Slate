@@ -6,7 +6,7 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --font-serif: "KaiTi", "BiauKai", "DFKai-SB", "TW-Kai", "标楷体", "AR PL UKai TW", serif;
+  --font-serif: "KaiTi", "BiauKai", "DFKai-SB", "TW-Kai", "標楷體", "标楷体", "AR PL UKai TW", serif;
   --font-sans: "Inter", "Noto Sans TC", "Microsoft JhengHei", sans-serif;
 
   --radius-sm: calc(var(--radius) - 4px);

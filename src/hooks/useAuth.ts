@@ -1,11 +1,12 @@
 // src/hooks/useAuth.ts
-import { auth, googleProvider } from "@/lib/firebase";
+import { auth, db, googleProvider } from "@/lib/firebase";
 import {
-    type User,
-    onAuthStateChanged,
-    signInWithPopup,
-    signOut
+  type User,
+  onAuthStateChanged,
+  signInWithPopup,
+  signOut
 } from "firebase/auth";
+import { doc, serverTimestamp, setDoc } from "firebase/firestore";
 import { useEffect, useState } from "react";
 
 export function useAuth() {
@@ -14,14 +15,24 @@ export function useAuth() {
 
   useEffect(() => {
     // 監聽登入狀態變化 (Firebase 會自動處理 Session)
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
       setLoading(false);
       
       if (currentUser) {
-        console.log("User logged in:", currentUser.displayName);
-      } else {
-        console.log("User logged out");
+        try {
+          const userRef = doc(db, "users", currentUser.uid);
+          // 使用 setDoc + merge: true，確保只更新欄位而不覆蓋整個文件
+          await setDoc(userRef, {
+            uid: currentUser.uid,
+            displayName: currentUser.displayName || "匿名使用者",
+            photoURL: currentUser.photoURL,
+            email: currentUser.email,
+            lastSeen: serverTimestamp()
+          }, { merge: true });
+        } catch (error) {
+          console.error("Error syncing user profile:", error);
+        }
       }
     });
 
