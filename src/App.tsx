@@ -5,6 +5,7 @@ import Editor from "@/pages/Editor";
 import Library from "@/pages/Library";
 import { HashRouter, Navigate, Route, Routes } from "react-router-dom";
 import DeckEditor from "./pages/DeckEditor";
+import Profile from "./pages/Profile";
 import QuizSession from "./pages/QuizSession";
 
 export default function App() {
@@ -17,6 +18,7 @@ export default function App() {
           <Route path="/editor" element={<Editor />} />
           <Route path="/editor/:deckId" element={<DeckEditor />} />
           <Route path="/quiz/:deckId" element={<QuizSession />} />
+          <Route path="/profile" element={<Profile />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>

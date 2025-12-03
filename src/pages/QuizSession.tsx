@@ -104,6 +104,30 @@ export default function QuizSession() {
     return () => window.removeEventListener('keydown', handleGlobalKeyDown);
   }, [status]);
 
+  useEffect(() => {
+    // 只有在「選擇題」且「作答中」才生效
+    if (status !== 'question' || currentCard?.type !== 'choice') return;
+
+    const handleChoiceKeys = (e: KeyboardEvent) => {
+      // 支援主鍵盤數字與 Numpad 數字
+      const keyMap: Record<string, number> = {
+        '1': 0, '2': 1, '3': 2, '4': 3,
+        'NumPad1': 0, 'NumPad2': 1, 'NumPad3': 2, 'NumPad4': 3
+      };
+
+      if (keyMap[e.key] !== undefined) {
+        const index = keyMap[e.key];
+        // 確保選項存在
+        if (shuffledOptions[index]) {
+          handleChoiceSelect(shuffledOptions[index]);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleChoiceKeys);
+    return () => window.removeEventListener('keydown', handleChoiceKeys);
+  }, [status, currentCard, shuffledOptions]); // 依賴 shuffledOptions 確保對應正確
+
   // --- 處理函式 ---
 
   const handleChoiceSelect = (selectedOption: string) => {
@@ -203,8 +227,8 @@ export default function QuizSession() {
               onClick={() => handleChoiceSelect(opt)}
               disabled={status !== 'question'}
             >
-              <span className="mr-3 text-muted-foreground font-mono text-sm">
-                {String.fromCharCode(65 + idx)}.
+              <span className="mr-3 text-muted-foreground font-mono text-sm border border-slate-200 dark:border-slate-700 px-1.5 rounded bg-slate-50 dark:bg-slate-800">
+                {idx + 1}
               </span>
               {opt}
             </Button>

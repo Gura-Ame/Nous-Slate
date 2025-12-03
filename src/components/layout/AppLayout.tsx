@@ -16,7 +16,7 @@ export function AppLayout() {
 
   return (
     <div className="h-screen w-full bg-slate-50 dark:bg-slate-950 flex overflow-hidden">
-      
+
       {/* Sidebar (Desktop) */}
       <aside className="w-64 border-r bg-white dark:bg-slate-900 hidden md:flex flex-col shrink-0 h-full">
         <div className="p-6">
@@ -36,8 +36,8 @@ export function AppLayout() {
                 to={item.href}
                 className={cn(
                   "flex items-center gap-3 px-4 py-3 rounded-lg transition-colors font-medium",
-                  isActive 
-                    ? "bg-slate-100 text-slate-900 dark:bg-slate-800 dark:text-slate-100" 
+                  isActive
+                    ? "bg-slate-100 text-slate-900 dark:bg-slate-800 dark:text-slate-100"
                     : "text-slate-500 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800"
                 )}
               >
@@ -51,14 +51,15 @@ export function AppLayout() {
         <div className="p-4 border-t mt-auto">
           {user ? (
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
+              {/* 將這塊包成 Link */}
+              <Link to="/profile" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
                 {user.photoURL && (
-                   <img src={user.photoURL} className="w-8 h-8 rounded-full" />
+                  <img src={user.photoURL} className="w-8 h-8 rounded-full" />
                 )}
                 <div className="text-sm">
                   <p className="font-medium truncate max-w-[100px]">{user.displayName}</p>
                 </div>
-              </div>
+              </Link>
               <Button variant="ghost" size="icon" onClick={logout} title="登出">
                 <LogOut size={18} />
               </Button>

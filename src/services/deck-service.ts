@@ -2,15 +2,16 @@
 import { db } from "@/lib/firebase";
 import type { Deck } from "@/types/schema";
 import {
-    addDoc,
-    collection,
-    deleteDoc,
-    doc,
-    getDocs,
-    orderBy,
-    query,
-    serverTimestamp,
-    where
+  addDoc,
+  collection,
+  deleteDoc,
+  doc,
+  getDocs,
+  orderBy,
+  query,
+  serverTimestamp,
+  updateDoc,
+  where
 } from "firebase/firestore";
 
 const COLLECTION_NAME = "decks";
@@ -88,6 +89,20 @@ export const DeckService = {
       })) as Deck[];
     } catch (error) {
       console.error("Error fetching public decks:", error);
+      throw error;
+    }
+  },
+  
+  // 5. 更新題庫資訊
+  updateDeck: async (deckId: string, data: Partial<Deck>) => {
+    try {
+      const docRef = doc(db, COLLECTION_NAME, deckId);
+      await updateDoc(docRef, {
+        ...data,
+        updatedAt: serverTimestamp()
+      });
+    } catch (error) {
+      console.error("Error updating deck:", error);
       throw error;
     }
   },
