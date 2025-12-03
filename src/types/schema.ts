@@ -1,10 +1,10 @@
-// src/types/schema.ts
 import { Timestamp } from "firebase/firestore";
 
 // 1. 卡片類型 (Card)
-export type CardType = "char" | "term" | "dictation" | "choice";
+// ▼▼▼ 修改 1: 加入 "fill_blank" ▼▼▼
+export type CardType = "char" | "term" | "dictation" | "choice" | "fill_blank";
 
-// 注音結構 (存入資料庫用，比前端的 BopomofoChar 更精簡)
+// 注音結構
 export interface BopomofoData {
   initial: string;
   medial: string;
@@ -13,22 +13,23 @@ export interface BopomofoData {
 }
 
 export interface CardContent {
-  stem: string;       // 題目 (例如: "一鳴驚人")
+  stem: string;       // 題目
   
-  // 序列化後的字元結構 (用於核心引擎)
-  blocks: {
-    char: string;     // "一"
+  // ▼▼▼ 修改 2: 改為選填 (Optional)，因為選擇題/填空題可能不需要詳細注音結構 ▼▼▼
+  blocks?: {
+    char: string;
     zhuyin: BopomofoData;
-    // 如果是破音字，這裡可以放候選清單
     candidates?: BopomofoData[]; 
   }[];
 
-  meaning?: string;   // 解釋 (純文字)
-  audioUrl?: string;  // 發音連結
-  image?: string;     // 圖片連結
+  meaning?: string;
+  audioUrl?: string;
+  image?: string;
   
-  // 選擇題專用
-  options?: string[]; // 干擾項
+  // ▼▼▼ 修改 3: 新增 answer 欄位 (用於儲存標準答案) ▼▼▼
+  answer?: string;
+
+  options?: string[]; // 干擾項 (選擇題用)
 }
 
 export interface Card {
@@ -37,11 +38,10 @@ export interface Card {
   type: CardType;
   content: CardContent;
   
-  // 統計數據 (全域)
   stats: {
     totalAttempts: number;
     totalErrors: number;
-    lastReportedAt?: Timestamp; // 錯誤回報時間
+    lastReportedAt?: Timestamp;
   };
   
   createdAt: Timestamp;
@@ -51,13 +51,13 @@ export interface Card {
 // 2. 題組類型 (Deck)
 export interface Deck {
   id: string;
-  ownerId: string; // 建立者
+  ownerId: string;
   title: string;
   description?: string;
-  tags: string[];  // e.g., ["國一", "成語"]
+  tags: string[];
   
   isPublic: boolean;
-  forkedFrom?: string; // 若是複製來的，指向原 Deck ID
+  forkedFrom?: string;
   
   stats: {
     cardCount: number;
@@ -71,22 +71,21 @@ export interface Deck {
 
 // 3. SRS 學習紀錄 (Review)
 export interface Review {
-  id: string; // 通常是 `{userId}_{cardId}`
+  id: string;
   userId: string;
   deckId: string;
   cardId: string;
   
-  // SM-2 演算法參數
   sm2: {
-    ease: number;       // 易度因子 (預設 2.5)
-    interval: number;   // 下次複習間隔 (天)
-    repetitions: number;// 連續答對次數
-    dueDate: Timestamp; // 下次複習時間
+    ease: number;
+    interval: number;
+    repetitions: number;
+    dueDate: Timestamp;
   };
 
   lastReview: Timestamp;
   history: {
     date: Timestamp;
-    grade: 0 | 1 | 2 | 3 | 4 | 5; // SM-2 評分
+    grade: 0 | 1 | 2 | 3 | 4 | 5;
   }[];
 }

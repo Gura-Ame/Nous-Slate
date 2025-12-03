@@ -50,7 +50,7 @@ export default function Library() {
       {/* Header & Search */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight font-serif text-slate-900 dark:text-slate-100">
+          <h2 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
             探索題庫
           </h2>
           <p className="text-muted-foreground">
@@ -96,7 +96,7 @@ export default function Library() {
                     </div>
                   )}
                 </div>
-                <CardTitle className="font-serif text-xl group-hover:text-primary transition-colors">
+                <CardTitle className="text-xl group-hover:text-primary transition-colors">
                   {deck.title}
                 </CardTitle>
               </CardHeader>

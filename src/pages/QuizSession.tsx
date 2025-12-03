@@ -12,6 +12,16 @@ import { useBopomofo } from "@/hooks/useBopomofo";
 import { CardService } from "@/services/card-service";
 import { useQuizStore } from "@/store/useQuizStore";
 
+// Utils
+function shuffleArray<T>(array: T[]): T[] {
+  const newArr = [...array];
+  for (let i = newArr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [newArr[i], newArr[j]] = [newArr[j], newArr[i]];
+  }
+  return newArr;
+}
+
 export default function QuizSession() {
   const { deckId } = useParams();
   const navigate = useNavigate();
@@ -23,10 +33,13 @@ export default function QuizSession() {
   } = useQuizStore();
 
   const inputRef = useRef<HTMLInputElement>(null);
+  const [shuffledOptions, setShuffledOptions] = useState<string[]>([]);
+  const [textInput, setTextInput] = useState("");
   const [userInputs, setUserInputs] = useState<BopomofoChar[]>([]);
   
   const currentCard = cards[currentIndex];
-  
+
+  // 1. 初始化：載入題庫
   useEffect(() => {
     if (!deckId) return;
     const init = async () => {
@@ -43,31 +56,102 @@ export default function QuizSession() {
       }
     };
     init();
-  }, [deckId]);
+  }, [deckId, startQuiz, navigate]);
 
-  // 監聽輸入變化，自動提交
+  // 2. 題目切換時的重置與初始化
   useEffect(() => {
     if (!currentCard || status !== 'question') return;
-    const targetLength = currentCard.content.blocks.length;
-    if (userInputs.length > 0 && userInputs.length === targetLength) {
-      checkAnswer(userInputs);
+
+    // A. 選擇題：洗牌選項
+    if (currentCard.type === 'choice') {
+      // 修正 Error 2: answer 可能是 undefined，給予預設空字串
+      const answer = currentCard.content.answer || "";
+      const options = currentCard.content.options || [];
+      // 確保陣列內都是 string
+      const opts = [answer, ...options];
+      setShuffledOptions(shuffleArray(opts));
     }
-  }, [userInputs, currentCard, status]);
+    // B. 填空題：清空輸入
+    if (currentCard.type === 'fill_blank') {
+      setTextInput("");
+    }
+    // C. 注音題：清空輸入
+    if (currentCard.type === 'term') {
+      setUserInputs([]);
+    }
+  }, [currentCard, status]);
+
+  // 3. 自動 Focus 邏輯
+  useEffect(() => {
+    if (status === 'question' && inputRef.current) {
+      const timer = setTimeout(() => {
+        inputRef.current?.focus();
+      }, 50);
+      return () => clearTimeout(timer);
+    }
+  }, [status, currentIndex, currentCard?.type]);
+
+  // 4. 全域鍵盤監聽
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      if ((status === 'success' || status === 'failure') && e.key === 'Enter') {
+        e.preventDefault();
+        handleNext();
+      }
+    };
+
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, [status]);
+
+  // --- 處理函式 ---
+
+  const handleChoiceSelect = (selectedOption: string) => {
+    if (status !== 'question') return;
+    const isCorrect = selectedOption === currentCard.content.answer;
+    submitAnswer(isCorrect);
+  };
+
+  const handleFillBlankSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (status !== 'question') return;
+    // 安全存取 answer，若無則預設為空字串
+    const targetAnswer = currentCard.content.answer || "";
+    const isCorrect = textInput.trim() === targetAnswer;
+    submitAnswer(isCorrect);
+  };
 
   const { displayBuffer, handleKeyDown, resetBuffer } = useBopomofo((char) => {
-    if (status !== 'question') return;
+    if (status !== 'question' || currentCard?.type !== 'term') return;
     setUserInputs(prev => [...prev, char]);
   });
 
-  const checkAnswer = (inputs: BopomofoChar[]) => {
-    if (!currentCard) return;
+  // 注音題自動檢查
+  useEffect(() => {
+    if (!currentCard || currentCard.type !== 'term' || status !== 'question') return;
+    
+    // 修正 Error 1: blocks 可能是 undefined，加上安全存取
+    const blocks = currentCard.content.blocks || [];
+    const targetLength = blocks.length;
+    
+    if (targetLength > 0 && userInputs.length === targetLength) {
+      checkTermAnswer(userInputs);
+    }
+  }, [userInputs, currentCard, status]);
 
-    const normalize = (str: string) => str === " " ? "" : str
+  const checkTermAnswer = (inputs: BopomofoChar[]) => {
+    if (!currentCard) return;
+    const normalize = (str: string) => str === " " ? "" : str;
+    
+    // 再次安全存取 blocks
+    const blocks = currentCard.content.blocks || [];
 
     const isCorrect = inputs.every((input, idx) => {
-      const target = currentCard.content.blocks[idx].zhuyin;
+      // 防呆：如果 blocks 長度不對
+      if (!blocks[idx]) return false;
+
+      const target = blocks[idx].zhuyin;
       
-      // 比對邏輯：針對輕聲特別處理
       const inputTone = normalize(input.tone);
       const targetTone = normalize(target.tone);
 
@@ -84,38 +168,161 @@ export default function QuizSession() {
     setUserInputs([]);
     resetBuffer();
     nextCard();
-    setTimeout(() => inputRef.current?.focus(), 50);
   };
 
-  useEffect(() => {
-    const handleGlobalKeyDown = (e: KeyboardEvent) => {
-      // 只有在 成功 或 失敗 狀態下，Enter 才有效
-      if ((status === 'success' || status === 'failure') && e.key === 'Enter') {
-        e.preventDefault();
-        handleNext();
-      }
-    };
-
-    window.addEventListener('keydown', handleGlobalKeyDown);
-    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
-  }, [status, handleNext]); // 依賴 status 變化
-
   const handleFocus = () => inputRef.current?.focus();
+
+  // --- Render 邏輯 ---
 
   if (!currentCard) return <div className="p-10 text-center">載入中...</div>;
 
   if (status === 'finished') {
     return (
       <div className="h-screen flex flex-col items-center justify-center space-y-6 bg-slate-50 dark:bg-slate-950">
-        <div className="text-4xl font-bold font-serif text-primary">練習完成！</div>
+        <div className="text-4xl font-bold text-primary">練習完成！</div>
         <Button onClick={() => navigate('/library')}>回到題庫</Button>
       </div>
     );
   }
 
+  // 介面：選擇題
+  const renderChoiceQuiz = () => (
+    <div className="w-full max-w-lg space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {shuffledOptions.map((opt, idx) => {
+          let btnVariant: "outline" | "default" | "destructive" = "outline";
+          if (status !== 'question') {
+            if (opt === currentCard.content.answer) btnVariant = "default";
+          }
+
+          return (
+            <Button
+              key={idx}
+              variant={btnVariant}
+              className="h-16 text-lg justify-start px-6 whitespace-normal text-left"
+              onClick={() => handleChoiceSelect(opt)}
+              disabled={status !== 'question'}
+            >
+              <span className="mr-3 text-muted-foreground font-mono text-sm">
+                {String.fromCharCode(65 + idx)}.
+              </span>
+              {opt}
+            </Button>
+          );
+        })}
+      </div>
+    </div>
+  );
+
+  // 介面：填空題
+  const renderFillBlankQuiz = () => (
+    <form onSubmit={handleFillBlankSubmit} className="w-full max-w-md flex gap-4">
+      <input
+        ref={inputRef}
+        type="text"
+        className="flex h-12 w-full rounded-md border border-input bg-background px-3 py-2 text-lg ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
+        placeholder="請輸入答案..."
+        value={textInput}
+        onChange={(e) => setTextInput(e.target.value)}
+        disabled={status !== 'question'}
+        autoComplete="off"
+      />
+      <Button type="submit" size="lg" disabled={!textInput || status !== 'question'}>
+        提交
+      </Button>
+    </form>
+  );
+
+  // 介面：國字注音題
+  const renderTermQuiz = () => {
+    // 安全存取 blocks
+    const blocks = currentCard.content.blocks || [];
+    
+    return (
+      <>
+        <div className="flex flex-wrap justify-center gap-4">
+          {blocks.map((block, index) => {
+              const inputChar = userInputs[index];
+              const isCurrent = index === userInputs.length;
+              
+              let displayBopomofo: BopomofoChar | string | undefined = undefined;
+              let blockStatus: "default" | "active" | "filled" | "error" | "correct" = "default";
+
+              if (inputChar) {
+                displayBopomofo = inputChar;
+                if (status === 'success') {
+                  blockStatus = 'correct';
+                } else if (status === 'failure') {
+                  const normalize = (str: string) => str === " " ? "" : str;
+                  const target = block.zhuyin;
+                  
+                  const inputTone = normalize(inputChar.tone);
+                  const targetTone = normalize(target.tone);
+
+                  const inputStr = inputChar.initial + inputChar.medial + inputChar.final + inputTone;
+                  const targetStr = target.initial + target.medial + target.final + targetTone;
+                  
+                  blockStatus = inputStr === targetStr ? 'correct' : 'error';
+                } else {
+                  blockStatus = 'filled';
+                }
+              } else if (isCurrent && status === 'question') {
+                displayBopomofo = displayBuffer;
+                blockStatus = 'active';
+              }
+
+              return (
+                <CharacterBlock
+                  key={index}
+                  char={block.char} 
+                  bopomofo={displayBopomofo}
+                  status={blockStatus}
+                />
+              );
+          })}
+        </div>
+        
+        <input
+          ref={inputRef}
+          type="url"
+          className="opacity-0 absolute w-0 h-0 pointer-events-none"
+          onKeyDown={handleKeyDown}
+          autoFocus
+          disabled={status !== 'question'}
+        />
+      </>
+    );
+  };
+
+  // 介面：正確答案顯示
+  const renderCorrectAnswer = () => {
+    if (currentCard.type === 'term') {
+      const blocks = currentCard.content.blocks || [];
+      return (
+        <div className="flex flex-wrap justify-center gap-3">
+          {blocks.map((block, i) => {
+            const zhuyin = block.zhuyin.initial + block.zhuyin.medial + block.zhuyin.final + block.zhuyin.tone;
+            return (
+              <div key={i} className="flex flex-col items-center">
+                <span className="text-lg font-serif text-slate-800 dark:text-slate-200">{block.char}</span>
+                <span className="text-sm font-serif text-primary">{zhuyin}</span>
+              </div>
+            )
+          })}
+        </div>
+      );
+    } else {
+      return (
+        <div className="text-xl font-bold text-slate-800 dark:text-slate-200">
+          {currentCard.content.answer}
+        </div>
+      );
+    }
+  };
+
   return (
     <div 
-      className="h-screen flex flex-col bg-slate-50 dark:bg-slate-950 cursor-text"
+      className="h-screen flex flex-col bg-slate-50 dark:bg-slate-950 cursor-default"
       onClick={handleFocus}
     >
       <header className="h-16 px-6 flex items-center justify-between border-b bg-white dark:bg-slate-900 shrink-0">
@@ -135,66 +342,30 @@ export default function QuizSession() {
 
       <main className="flex-1 flex flex-col items-center justify-center p-8 space-y-12">
         
-        {/* 題目區 */}
-        <div className="text-center space-y-4">
-          <h2 className="text-6xl font-serif font-bold text-slate-800 dark:text-slate-100 tracking-widest">
-            {currentCard.content.stem}
+        <div className="text-center space-y-6">
+          <h2 className="text-5xl font-serif font-bold text-slate-800 dark:text-slate-100 leading-tight">
+            {currentCard.type === 'fill_blank' 
+              ? currentCard.content.stem.split('___').map((part, i, arr) => (
+                  <span key={i}>
+                    {part}
+                    {i < arr.length - 1 && (
+                      <span className="inline-block w-16 border-b-4 border-slate-300 mx-2"></span>
+                    )}
+                  </span>
+                ))
+              : currentCard.content.stem
+            }
           </h2>
+          
           <p className="text-lg text-slate-500 max-w-lg mx-auto">
-            {status !== 'question' && currentCard.content.meaning}
+             {status !== 'question' && currentCard.content.meaning}
           </p>
         </div>
 
-        {/* 輸入區 */}
-        <div className="flex flex-wrap justify-center gap-4">
-          {currentCard.content.blocks.map((block, index) => {
-            const inputChar = userInputs[index];
-            const isCurrent = index === userInputs.length;
-            
-            let displayBopomofo: BopomofoChar | string | undefined = undefined;
-            let blockStatus: "default" | "active" | "filled" | "error" | "correct" = "default";
+        {currentCard.type === 'choice' && renderChoiceQuiz()}
+        {currentCard.type === 'fill_blank' && renderFillBlankQuiz()}
+        {currentCard.type === 'term' && renderTermQuiz()}
 
-            if (inputChar) {
-              displayBopomofo = inputChar;
-              
-              if (status === 'success') {
-                blockStatus = 'correct';
-              } else if (status === 'failure') {
-                const target = block.zhuyin;
-                const inputStr = inputChar.initial + inputChar.medial + inputChar.final + inputChar.tone;
-                const targetStr = target.initial + target.medial + target.final + target.tone;
-                
-                // 只有錯的字變紅，對的字顯示綠色(correct)或普通色(filled)
-                blockStatus = inputStr === targetStr ? 'correct' : 'error';
-              } else {
-                blockStatus = 'filled';
-              }
-            } else if (isCurrent && status === 'question') {
-              displayBopomofo = displayBuffer;
-              blockStatus = 'active';
-            }
-
-            return (
-              <CharacterBlock
-                key={index}
-                char={block.char} 
-                bopomofo={displayBopomofo}
-                status={blockStatus}
-              />
-            );
-          })}
-        </div>
-
-        <input
-          ref={inputRef}
-          type="url"
-          className="opacity-0 absolute w-0 h-0 pointer-events-none"
-          onKeyDown={handleKeyDown}
-          autoFocus
-          disabled={status !== 'question'}
-        />
-
-        {/* 結果回饋區 */}
         <div className="min-h-24 flex items-center justify-center w-full">
           {status === 'success' && (
             <div className="flex flex-col items-center gap-4 animate-in slide-in-from-bottom-4 fade-in">
@@ -215,17 +386,7 @@ export default function QuizSession() {
               
               <div className="flex flex-col items-center gap-2 p-4 bg-slate-100 dark:bg-slate-900 rounded-lg w-full">
                 <span className="text-sm text-slate-500 font-medium">正確答案</span>
-                <div className="flex flex-wrap justify-center gap-3">
-                  {currentCard.content.blocks.map((block, i) => {
-                    const zhuyin = block.zhuyin.initial + block.zhuyin.medial + block.zhuyin.final + block.zhuyin.tone;
-                    return (
-                      <div key={i} className="flex flex-col items-center">
-                        <span className="text-lg font-serif text-slate-800 dark:text-slate-200">{block.char}</span>
-                        <span className="text-sm font-serif text-primary">{zhuyin}</span>
-                      </div>
-                    )
-                  })}
-                </div>
+                {renderCorrectAnswer()}
               </div>
 
               <Button onClick={handleNext} variant="secondary" className="w-full sm:w-auto">
