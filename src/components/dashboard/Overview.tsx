@@ -1,16 +1,9 @@
 import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
-const data = [
-  { name: "Mon", total: 12 },
-  { name: "Tue", total: 30 },
-  { name: "Wed", total: 45 },
-  { name: "Thu", total: 25 },
-  { name: "Fri", total: 60 },
-  { name: "Sat", total: 80 },
-  { name: "Sun", total: 40 },
-];
-
-export function Overview() {
+interface OverviewProps {
+  data: { name: string; total: number }[];
+}
+export function Overview({ data }: OverviewProps) {
   return (
     <ResponsiveContainer width="100%" height={350}>
       <BarChart data={data}>
@@ -27,6 +20,7 @@ export function Overview() {
           tickLine={false}
           axisLine={false}
           tickFormatter={(value) => `${value}`}
+          allowDecimals={false} // 整數
         />
         <Tooltip 
           cursor={{ fill: 'transparent' }}

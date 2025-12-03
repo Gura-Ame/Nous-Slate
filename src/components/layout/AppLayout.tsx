@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
-import { LayoutDashboard, Library, LogOut, PenTool } from "lucide-react";
+import { LayoutDashboard, Library, LogOut, PenTool, Settings } from "lucide-react";
 import { Link, Outlet, useLocation } from "react-router-dom";
 
 export function AppLayout() {
@@ -12,6 +12,7 @@ export function AppLayout() {
     { href: "/", label: "儀表板", icon: LayoutDashboard },
     { href: "/library", label: "探索題庫", icon: Library },
     { href: "/editor", label: "創作後台", icon: PenTool },
+    { href: "/settings", label: "設定", icon: Settings }, 
   ];
 
   return (

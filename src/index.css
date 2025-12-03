@@ -131,7 +131,7 @@
     position: relative;
     background-color: transparent;
   }
-  
+
   /* 
     十字虛線 
     (因為已經限制在左側容器內，所以 inset: 0 剛剛好)
@@ -140,7 +140,7 @@
     content: "";
     position: absolute;
     inset: 0;
-    background-image: 
+    background-image:
       linear-gradient(to right, theme('colors.slate.300') 1px, transparent 1px),
       linear-gradient(to bottom, theme('colors.slate.300') 1px, transparent 1px);
     background-size: 50% 50%;
@@ -149,10 +149,26 @@
     pointer-events: none;
     z-index: 0;
   }
-  
+
   .dark .bg-tian-zi-ge::after {
-    background-image: 
+    background-image:
       linear-gradient(to right, theme('colors.slate.600') 1px, transparent 1px),
       linear-gradient(to bottom, theme('colors.slate.600') 1px, transparent 1px);
+  }
+
+  .perspective-1000 {
+    perspective: 1000px;
+  }
+
+  .transform-style-3d {
+    transform-style: preserve-3d;
+  }
+
+  .backface-hidden {
+    backface-visibility: hidden;
+  }
+
+  .rotate-y-180 {
+    transform: rotateY(180deg);
   }
 }

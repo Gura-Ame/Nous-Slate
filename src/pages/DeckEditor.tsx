@@ -1,31 +1,33 @@
-import { ArrowLeft, Loader2, Save, Trash2, Wand2 } from "lucide-react";
+import { ArrowLeft, Loader2, Save, Trash2, Volume2, Wand2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Link, useParams } from "react-router-dom";
 import { toast } from "sonner";
 
 // Components
+import { ImportJsonDialog } from "@/components/editor/ImportJsonDialog"; // 記得確認路徑
 import { CharacterBlock } from "@/components/quiz/CharacterBlock";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"; // 新增 Tabs
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 
 // Logic & Services
+import { useDictionary } from "@/hooks/useDictionary"; // 新增
 import { useMoedict } from "@/hooks/useMoedict";
 import { parseBopomofoString, parseOneBopomofo } from "@/lib/bopomofo-utils";
 import { CardService } from "@/services/card-service";
 import type { Card as CardType, CardType as SchemaCardType } from "@/types/schema";
 
 interface FormData {
-  type: SchemaCardType; // 新增題型欄位
+  type: SchemaCardType;
   stem: string;
-  zhuyinRaw: string; 
+  zhuyinRaw: string;
   definition: string;
-  // 新增選擇/填空題專用欄位
+  audioUrl: string; // 新增：音檔連結
   answer: string; 
   option1: string;
   option2: string;
@@ -38,16 +40,18 @@ export default function DeckEditor() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   
-  // Moedict Hook
+  // Hooks
   const { search: searchMoedict, loading: moedictLoading } = useMoedict();
+  const { search: searchDict, loading: dictLoading } = useDictionary(); // 字典 Hook
 
   // Form Setup
-  const { register, handleSubmit, watch, setValue, reset, formState: { errors } } = useForm<FormData>({
+  const { register, handleSubmit, watch, setValue, reset } = useForm<FormData>({
     defaultValues: {
-      type: "term", // 預設為國字注音卡
+      type: "term",
       stem: "",
       zhuyinRaw: "",
       definition: "",
+      audioUrl: "",
       answer: "",
       option1: "",
       option2: "",
@@ -55,12 +59,13 @@ export default function DeckEditor() {
     }
   });
 
-  // 監聽輸入值以進行預覽
+  // Watchers for Preview
   const watchStem = watch("stem");
   const watchZhuyin = watch("zhuyinRaw");
   const watchType = watch("type");
+  const watchAudio = watch("audioUrl");
 
-  // 初始化：載入卡片列表
+  // Load Cards
   const fetchCards = async () => {
     if (!deckId) return;
     try {
@@ -77,23 +82,49 @@ export default function DeckEditor() {
     fetchCards();
   }, [deckId]);
 
-  // 自動填入功能 (Magic Button)
-  const handleAutoFill = async () => {
+  // Handler: 國語萌典查詢
+  const handleAutoFillMoedict = async () => {
     const stem = watchStem;
     if (!stem) return toast.error("請先輸入題目 (國字)");
 
     const result = await searchMoedict(stem);
     if (result) {
       setValue("zhuyinRaw", result.bopomofo);
-      // 簡單清洗解釋 (移除 HTML 標籤)
       setValue("definition", result.definition.replace(/<[^>]*>?/gm, ''));
-      toast.success("已自動填入注音與釋義");
+      toast.success("已填入萌典資料");
     } else {
-      toast.error("萌典查無此詞，請手動輸入");
+      toast.error("萌典查無此詞");
     }
   };
 
-  // 提交表單 (新增卡片)
+  // Handler: 英語字典查詢
+  const handleAutoFillDict = async () => {
+    const stem = watchStem;
+    if (!stem) return toast.error("請先輸入單字");
+
+    const result = await searchDict(stem);
+    if (result) {
+      // 組合解釋：音標 + 定義 + 例句
+      const combinedDef = ` [${result.phonetic}]\n${result.definition}`;
+      setValue("definition", combinedDef);
+      
+      if (result.audio) {
+        setValue("audioUrl", result.audio);
+        toast.success("已填入解釋與發音");
+      } else {
+        toast.success("已填入解釋 (無發音檔)");
+      }
+    }
+  };
+
+  // Handler: 播放音檔預覽
+  const playAudioPreview = () => {
+    if (watchAudio) {
+      new Audio(watchAudio).play();
+    }
+  };
+
+  // Submit Logic
   const onSubmit = async (data: FormData) => {
     if (!deckId) return;
     setSaving(true);
@@ -101,43 +132,36 @@ export default function DeckEditor() {
     try {
       let content: any = {
         stem: data.stem,
-        meaning: data.definition
+        meaning: data.definition,
+        audioUrl: data.audioUrl || undefined // 存入音檔
       };
 
-      // 根據題型組裝資料
       if (data.type === "term") {
-        // 1. 國字注音模式
         const bopomofoList = parseBopomofoString(data.zhuyinRaw);
         const chars = data.stem.split("");
-        
-        // 組合 Blocks
         content.blocks = chars.map((char, index) => ({
           char,
-          // 如果注音數量不對，就給空結構防爆
           zhuyin: bopomofoList[index] || parseOneBopomofo("")
         }));
       } else if (data.type === "choice") {
-        // 2. 選擇題模式
         content.answer = data.answer;
-        content.options = [data.option1, data.option2, data.option3].filter(Boolean); // 過濾空選項
+        content.options = [data.option1, data.option2, data.option3].filter(Boolean);
       } else if (data.type === "fill_blank") {
-        // 3. 填空題模式
         content.answer = data.answer;
+      } else if (data.type === "flashcard") {
+        // Flashcard 不需要額外處理，直接存 stem, meaning, audioUrl 即可
       }
 
-      // 寫入 DB
       await CardService.createCard(deckId, data.type, content);
 
       toast.success("卡片新增成功");
-      
-      // 重置表單 (保留目前的題型，方便連續出題)
+      // 保留題型設定
       reset({ 
-        type: data.type,
-        stem: "", zhuyinRaw: "", definition: "", 
+        type: data.type, 
+        stem: "", zhuyinRaw: "", definition: "", audioUrl: "", 
         answer: "", option1: "", option2: "", option3: "" 
       });
-      
-      fetchCards(); // 重整列表
+      fetchCards();
       
     } catch (error) {
       toast.error("儲存失敗");
@@ -146,7 +170,7 @@ export default function DeckEditor() {
     }
   };
 
-  // 監聽 Ctrl+Enter 快速儲存
+  // Keyboard Shortcut
   useEffect(() => {
     const handleShortcut = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
@@ -154,12 +178,10 @@ export default function DeckEditor() {
         handleSubmit(onSubmit)();
       }
     };
-
     window.addEventListener('keydown', handleShortcut);
     return () => window.removeEventListener('keydown', handleShortcut);
   }, [handleSubmit, onSubmit]);
 
-  // 刪除卡片
   const handleDelete = async (cardId: string) => {
     if(!confirm("確定刪除？")) return;
     await CardService.deleteCard(cardId);
@@ -180,12 +202,22 @@ export default function DeckEditor() {
           </Link>
           <h1 className="font-bold text-lg">編輯題庫</h1>
         </div>
-        <div className="text-sm text-slate-500">
-           {cards.length} 張卡片
+        
+        <div className="flex items-center gap-2">
+           {/* JSON Import Button */}
+           {deckId && (
+             <ImportJsonDialog 
+               deckId={deckId} 
+               onSuccess={fetchCards} 
+             />
+           )}
+           <div className="text-sm text-slate-500 ml-2">
+             {cards.length} 張卡片
+           </div>
         </div>
       </header>
 
-      {/* Main Layout: Two Columns */}
+      {/* Main Layout */}
       <div className="flex-1 flex overflow-hidden">
         
         {/* Left: Card List */}
@@ -199,22 +231,23 @@ export default function DeckEditor() {
               ) : (
                 cards.map(card => (
                   <div key={card.id} className="group flex items-center justify-between p-3 rounded-lg border bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 transition-colors">
-                    <div>
-                      <div className="font-bold text-lg">
-                        {/* 根據題型顯示不同標題 */}
-                        {card.type === 'term' ? card.content.stem : 
-                         card.type === 'fill_blank' ? '填空題' : '選擇題'}
+                    <div className="overflow-hidden">
+                      <div className="font-bold text-lg truncate pr-2">
+                        {card.content.stem}
                       </div>
-                      <div className="text-xs text-muted-foreground truncate max-w-[180px]">
-                        {card.type === 'term' 
-                          ? (card.content.meaning || "無釋義")
-                          : card.content.stem}
+                      <div className="text-xs text-muted-foreground truncate flex gap-2">
+                        <span className="uppercase text-[10px] border px-1 rounded bg-white dark:bg-slate-900">
+                          {card.type === 'term' ? '國' : 
+                           card.type === 'choice' ? '選' : 
+                           card.type === 'fill_blank' ? '填' : '英'}
+                        </span>
+                        <span className="truncate max-w-[140px]">{card.content.meaning || "無釋義"}</span>
                       </div>
                     </div>
                     <Button 
                       variant="ghost" 
                       size="icon" 
-                      className="opacity-0 group-hover:opacity-100 h-8 w-8 text-red-500"
+                      className="opacity-0 group-hover:opacity-100 h-8 w-8 text-red-500 shrink-0"
                       onClick={() => handleDelete(card.id)}
                     >
                       <Trash2 className="h-4 w-4" />
@@ -231,7 +264,7 @@ export default function DeckEditor() {
           
           <div className="w-full max-w-2xl space-y-8">
             
-            {/* Preview Section (Only for Term Cards) */}
+            {/* Preview Section */}
             {watchType === 'term' && (
               <div className="p-8 border-2 border-dashed rounded-xl bg-slate-100/50 dark:bg-slate-800/50 flex flex-wrap gap-4 justify-center min-h-40 items-center">
                  {watchStem ? (
@@ -252,6 +285,21 @@ export default function DeckEditor() {
                  )}
               </div>
             )}
+            
+            {/* Flashcard Preview */}
+            {watchType === 'flashcard' && (
+              <div className="p-8 border-2 border-dashed rounded-xl bg-slate-100/50 dark:bg-slate-800/50 flex flex-col items-center justify-center min-h-40 gap-4 text-center">
+                 <h2 className="text-4xl font-bold">{watchStem || "Vocabulary"}</h2>
+                 {watchAudio && (
+                   <Button variant="secondary" size="sm" onClick={playAudioPreview} className="gap-2">
+                     <Volume2 className="h-4 w-4" /> 試聽發音
+                   </Button>
+                 )}
+                 <p className="text-sm text-muted-foreground line-clamp-3 max-w-md whitespace-pre-wrap">
+                   {watch("definition") || "Definitions will appear here..."}
+                 </p>
+              </div>
+            )}
 
             {/* Edit Form */}
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 bg-white dark:bg-slate-900 p-6 rounded-xl border shadow-sm">
@@ -262,91 +310,89 @@ export default function DeckEditor() {
                 onValueChange={(val) => setValue("type", val as SchemaCardType)}
                 className="w-full"
               >
-                <TabsList className="grid w-full grid-cols-3 mb-6">
+                <TabsList className="grid w-full grid-cols-4 mb-6">
                   <TabsTrigger value="term">國字注音</TabsTrigger>
                   <TabsTrigger value="choice">選擇題</TabsTrigger>
                   <TabsTrigger value="fill_blank">填空題</TabsTrigger>
+                  {/* ▼▼▼ 新增這個 Tab ▼▼▼ */}
+                  <TabsTrigger value="flashcard">單字卡</TabsTrigger>
                 </TabsList>
 
-                {/* 1. 國字注音模式 */}
+                {/* 1. 國字注音 */}
                 <TabsContent value="term" className="space-y-4">
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div className="space-y-2">
                       <Label>題目 (國字)</Label>
                       <div className="flex gap-2">
-                        <Input 
-                          placeholder="例如：銀行" 
-                          {...register("stem")}
-                        />
-                        <Button 
-                          type="button" 
-                          variant="outline" 
-                          size="icon"
-                          onClick={handleAutoFill}
-                          disabled={moedictLoading}
-                          title="自動查詢萌典"
-                        >
+                        <Input placeholder="例如：銀行" {...register("stem")} />
+                        <Button type="button" onClick={handleAutoFillMoedict} variant="outline" size="icon" disabled={moedictLoading}>
                           {moedictLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
                         </Button>
                       </div>
                     </div>
-
                     <div className="space-y-2">
                       <Label>注音 (空白分隔)</Label>
-                      <Input 
-                        placeholder="ㄧㄣˊ ㄏㄤˊ" 
-                        {...register("zhuyinRaw")}
-                      />
+                      <Input placeholder="ㄧㄣˊ ㄏㄤˊ" {...register("zhuyinRaw")} />
                     </div>
                   </div>
                 </TabsContent>
 
-                {/* 2. 選擇題模式 */}
+                {/* 2. 選擇題 */}
                 <TabsContent value="choice" className="space-y-4">
                    <div className="space-y-2">
                      <Label>題目問題</Label>
-                     <Input placeholder="例如：下列哪個成語形容聲音很大？" {...register("stem")} />
+                     <Input placeholder="問題描述..." {...register("stem")} />
                    </div>
                    <div className="grid gap-4 sm:grid-cols-2">
                      <div className="space-y-2">
                        <Label className="text-emerald-600 font-bold">正確答案</Label>
-                       <Input placeholder="一鳴驚人" {...register("answer")} />
+                       <Input {...register("answer")} />
                      </div>
-                     <div className="space-y-2">
-                       <Label>干擾選項 1</Label>
-                       <Input placeholder="鴉雀無聲" {...register("option1")} />
-                     </div>
-                     <div className="space-y-2">
-                       <Label>干擾選項 2</Label>
-                       <Input placeholder="對牛彈琴" {...register("option2")} />
-                     </div>
-                     <div className="space-y-2">
-                       <Label>干擾選項 3</Label>
-                       <Input placeholder="一竅不通" {...register("option3")} />
-                     </div>
+                     <div className="space-y-2"><Label>選項 1</Label><Input {...register("option1")} /></div>
+                     <div className="space-y-2"><Label>選項 2</Label><Input {...register("option2")} /></div>
+                     <div className="space-y-2"><Label>選項 3</Label><Input {...register("option3")} /></div>
                    </div>
                 </TabsContent>
 
-                {/* 3. 填空題模式 */}
+                {/* 3. 填空題 */}
                 <TabsContent value="fill_blank" className="space-y-4">
                    <div className="space-y-2">
-                     <Label>題目 (請用底線 ___ 代表空格)</Label>
-                     <Input placeholder="例如：一___驚人" {...register("stem")} />
+                     <Label>題目 (用 ___ 代表空格)</Label>
+                     <Input placeholder="Example: Apple is ___." {...register("stem")} />
                    </div>
                    <div className="space-y-2">
-                     <Label className="text-emerald-600 font-bold">空格答案</Label>
-                     <Input placeholder="鳴" {...register("answer")} />
+                     <Label className="text-emerald-600 font-bold">答案</Label>
+                     <Input placeholder="red" {...register("answer")} />
+                   </div>
+                </TabsContent>
+
+                {/* 4. 單字卡 (Flashcard) */}
+                <TabsContent value="flashcard" className="space-y-4">
+                   <div className="grid gap-4 sm:grid-cols-2">
+                     <div className="space-y-2">
+                       <Label>英文單字</Label>
+                       <div className="flex gap-2">
+                         <Input placeholder="e.g. Epiphany" {...register("stem")} />
+                         <Button type="button" onClick={handleAutoFillDict} variant="outline" size="icon" disabled={dictLoading}>
+                           {dictLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
+                         </Button>
+                       </div>
+                     </div>
+                     <div className="space-y-2">
+                        <Label>發音連結 (Audio URL)</Label>
+                        <Input placeholder="https://..." {...register("audioUrl")} />
+                     </div>
                    </div>
                 </TabsContent>
 
               </Tabs>
 
               {/* 釋義欄位 (通用) */}
-              <div className="space-y-2">
-                <Label>釋義 / 筆記</Label>
+              <div className="space-y-2 mt-4">
+                <Label>釋義 / 筆記 / 解析</Label>
                 <Textarea 
-                  className="min-h-[100px]" 
-                  placeholder="輸入解釋..." 
+                  className="min-h-[120px] font-mono text-sm" 
+                  placeholder="輸入詳細解釋..." 
                   {...register("definition")}
                 />
               </div>

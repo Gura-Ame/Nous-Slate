@@ -2,10 +2,19 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/hooks/useAuth";
+import { type DashboardStats, StatsService } from "@/services/stats-service";
 import { Book, Flame, LogOut, Trophy } from "lucide-react";
+import { useEffect, useState } from "react";
 
 export default function Profile() {
   const { user, logout } = useAuth();
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+
+  useEffect(() => {
+    if (!user) return;
+    StatsService.getDashboardStats(user.uid).then(setStats);
+  }, [user]);
+
 
   if (!user) return <div className="p-10 text-center">請先登入</div>;
 
@@ -48,8 +57,7 @@ export default function Profile() {
             <Trophy className="h-4 w-4 text-amber-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">1,234</div>
-            <p className="text-xs text-muted-foreground mt-1">+12% vs 上週</p>
+            <div className="text-2xl font-bold">{stats?.totalReviews || 0}</div>
           </CardContent>
         </Card>
 
@@ -59,8 +67,7 @@ export default function Profile() {
             <Flame className="h-4 w-4 text-orange-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">5 天</div>
-            <p className="text-xs text-muted-foreground mt-1">再 2 天達成週目標</p>
+            <div className="text-2xl font-bold">{stats?.streak || 0} 天</div>
           </CardContent>
         </Card>
 
@@ -70,8 +77,7 @@ export default function Profile() {
             <Book className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">8</div>
-            <p className="text-xs text-muted-foreground mt-1">含 3 個公開題庫</p>
+            <div className="text-2xl font-bold">{stats?.totalDecks || 0}</div>
           </CardContent>
         </Card>
       </div>
