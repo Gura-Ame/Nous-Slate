@@ -118,7 +118,7 @@ export default function Library() {
               </CardHeader>
               
               <CardContent className="flex-1">
-                <p className="text-sm text-muted-foreground line-clamp-3 min-h-[3rem]">
+                <p className="text-sm text-muted-foreground line-clamp-3 min-h-12">
                   {deck.description || "這個題庫沒有描述。"}
                 </p>
               </CardContent>
