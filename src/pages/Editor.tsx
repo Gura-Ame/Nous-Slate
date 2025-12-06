@@ -94,7 +94,7 @@ export default function Editor() {
             <Card key={deck.id} className="group hover:shadow-md transition-shadow">
               <CardHeader>
                 <div className="flex items-start justify-between">
-                  <div className="space-y-2 w-full pr-2"> {/* 加寬度與間距 */}
+                  <div className="space-y-3 w-full pr-2"> {/* 增加 space-y */}
 
                     {/* Title & Public Badge */}
                     <div className="flex items-center gap-2 flex-wrap">
@@ -110,18 +110,24 @@ export default function Editor() {
                       )}
                     </div>
 
-                    {/* Tags Display (新增) */}
-                    {deck.tags && deck.tags.length > 0 && (
-                      <div className="flex gap-1 flex-wrap">
-                        {deck.tags.map(tag => (
-                          <span key={tag} className="text-[10px] px-1.5 py-0.5 rounded border bg-white dark:bg-slate-950 text-slate-500">
+                    {/* Tags Display - 修正高度問題 */}
+                    {/* 加入 min-h-[1.5rem] 確保就算沒 tag 也有高度，避免排版跳動 */}
+                    <div className="flex gap-1 flex-wrap min-h-6 items-center">
+                      {deck.tags && deck.tags.length > 0 ? (
+                        deck.tags.map(tag => (
+                          <span key={tag} className="text-[10px] px-2 py-0.5 rounded-full border bg-slate-50 dark:bg-slate-900 text-slate-500">
                             #{tag}
                           </span>
-                        ))}
-                      </div>
-                    )}
+                        ))
+                      ) : (
+                        // 佔位符，保持高度一致
+                        <span className="text-[10px] text-slate-300 italic px-1">
+                          無標籤
+                        </span>
+                      )}
+                    </div>
 
-                    <CardDescription className="line-clamp-2">
+                    <CardDescription className="line-clamp-2 min-h-10"> {/* 增加 min-h 確保兩行高度 */}
                       {deck.description || "無描述"}
                     </CardDescription>
                   </div>
@@ -164,8 +170,8 @@ export default function Editor() {
           ))
         )}
       </div>
-      
-      <EditDeckDialog 
+
+      <EditDeckDialog
         deck={editingDeck}
         open={isEditOpen}
         onOpenChange={setIsEditOpen}

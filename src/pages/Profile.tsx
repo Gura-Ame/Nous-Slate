@@ -54,7 +54,7 @@ export default function Profile() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-slate-500">總學習次數</CardTitle>
-            <Trophy className="h-4 w-4 text-amber-500" />
+            <Trophy className="h-5 w-5 text-amber-500" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats?.totalReviews || 0}</div>
@@ -64,7 +64,7 @@ export default function Profile() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-slate-500">連續打卡</CardTitle>
-            <Flame className="h-4 w-4 text-orange-500" />
+            <Flame className="h-5 w-5 text-orange-500" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats?.streak || 0} 天</div>
@@ -74,7 +74,7 @@ export default function Profile() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-slate-500">擁有題庫</CardTitle>
-            <Book className="h-4 w-4 text-blue-500" />
+            <Book className="h-5 w-5 text-blue-500" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats?.totalDecks || 0}</div>

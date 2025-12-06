@@ -1,29 +1,27 @@
 // src/lib/zhuyin-map.ts
 
-// 1. 聲母 (Initials)
 export const INITIALS = [
   "ㄅ", "ㄆ", "ㄇ", "ㄈ", "ㄉ", "ㄊ", "ㄋ", "ㄌ", "ㄍ", "ㄎ", "ㄏ", 
   "ㄐ", "ㄑ", "ㄒ", "ㄓ", "ㄔ", "ㄕ", "ㄖ", "ㄗ", "ㄘ", "ㄙ"
 ] as const;
 
-// 2. 介音 (Medials)
 export const MEDIALS = ["ㄧ", "ㄨ", "ㄩ"] as const;
 
-// 3. 韻母 (Finals) - 包含單韻母與複韻母
 export const FINALS = [
   "ㄚ", "ㄛ", "ㄜ", "ㄝ", "ㄞ", "ㄟ", "ㄠ", "ㄡ", "ㄢ", "ㄣ", "ㄤ", "ㄥ", "ㄦ"
 ] as const;
 
-// 4. 聲調 (Tones)
+// 這裡定義系統唯一認可的聲調符號
 export const TONES = {
-  1: "",    // 一聲 (空白鍵，通常不顯示符號)
-  2: "ˊ",   // 二聲
-  3: "ˇ",   // 三聲
-  4: "ˋ",   // 四聲
-  5: "˙",   // 輕聲
+  1: " ",    // 一聲 (空白鍵)
+  2: "ˊ",   // 二聲 (U+02CA)
+  3: "ˇ",   // 三聲 (U+02C7)
+  4: "ˋ",   // 四聲 (U+02CB)
+  5: "˙",   // 輕聲 (U+02D9)
 } as const;
 
-// 5. 大千式鍵盤對應表 (Standard Layout)
+export const TONE_SYMBOLS = Object.values(TONES);
+
 export const KEY_MAP: Record<string, string> = {
   // 聲母
   "1": "ㄅ", "q": "ㄆ", "a": "ㄇ", "z": "ㄈ",
@@ -40,12 +38,16 @@ export const KEY_MAP: Record<string, string> = {
   "0": "ㄢ", "p": "ㄣ", ";": "ㄤ", "/": "ㄥ",
   "-": "ㄦ",
   
-  // 聲調鍵 (注意：空白鍵需要額外邏輯處理)
-  "6": "ˊ", // 二聲
-  "3": "ˇ", // 三聲
-  "4": "ˋ", // 四聲
-  "7": "˙", // 輕聲
+  // 聲調鍵映射
+  " ": TONES[1],
+  "6": TONES[2],
+  "3": TONES[3],
+  "4": TONES[4],
+  "7": TONES[5],
 };
+
+// 輔助函式：判斷是否為聲調
+export const isToneSymbol = (char: string) => TONE_SYMBOLS.includes(char as any);
 
 // 輔助函式：判斷注音類型
 export const getZhuyinType = (char: string) => {

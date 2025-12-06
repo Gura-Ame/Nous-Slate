@@ -35,7 +35,7 @@ export default function Dashboard() {
     return <div className="p-8 space-y-4">
       <Skeleton className="h-12 w-1/3" />
       <div className="grid gap-4 md:grid-cols-4">
-        {Array.from({length:4}).map((_, i) => <Skeleton key={i} className="h-32" />)}
+        {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-32" />)}
       </div>
       <Skeleton className="h-[400px]" />
     </div>;
@@ -65,75 +65,100 @@ export default function Dashboard() {
         <TabsList>
           <TabsTrigger value="overview">總覽</TabsTrigger>
         </TabsList>
-        
-        <TabsContent value="overview" className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            
+
+        <TabsContent value="overview" className="space-y-6">
+
+          {/* Top Cards (4 Grid) */}
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">總複習次數</CardTitle>
-                <History className="h-4 w-4 text-muted-foreground" />
+                <CardTitle className="text-base font-medium text-slate-600 dark:text-slate-400">總複習次數</CardTitle>
+                <History className="h-6 w-6 text-muted-foreground opacity-70" /> {/* 加大圖示 */}
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stats?.totalReviews || 0}</div>
+                <div className="text-4xl font-bold">{stats?.totalReviews || 0}</div> {/* 加大數字 */}
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">今日複習</CardTitle>
-                <BrainCircuit className="h-4 w-4 text-muted-foreground" />
+                <CardTitle className="text-base font-medium text-slate-600 dark:text-slate-400">今日複習</CardTitle>
+                <BrainCircuit className="h-6 w-6 text-muted-foreground opacity-70" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-primary">{stats?.todayCount || 0}</div>
+                <div className="text-4xl font-bold text-primary">{stats?.todayCount || 0}</div>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">連續打卡</CardTitle>
-                <Flame className="h-4 w-4 text-orange-500" />
+                <CardTitle className="text-base font-medium text-slate-600 dark:text-slate-400">連續打卡</CardTitle>
+                <Flame className="h-6 w-6 text-orange-500" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stats?.streak || 0} 天</div>
+                <div className="text-4xl font-bold">{stats?.streak || 0} <span className="text-lg font-normal text-muted-foreground">天</span></div>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">擁有題庫</CardTitle>
-                <BookOpen className="h-4 w-4 text-muted-foreground" />
+                <CardTitle className="text-base font-medium text-slate-600 dark:text-slate-400">擁有題庫</CardTitle>
+                <BookOpen className="h-6 w-6 text-muted-foreground opacity-70" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stats?.totalDecks || 0}</div>
+                <div className="text-4xl font-bold">{stats?.totalDecks || 0}</div>
               </CardContent>
             </Card>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-1 lg:grid-cols-7">
-            <Card className="col-span-4">
+          {/* Main Content Grid */}
+          <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-7 items-stretch">
+
+            {/* Left: Bar Chart */}
+            {/* ▼▼▼ 修改：col-span-1 lg:col-span-4 ▼▼▼ */}
+            <Card className="col-span-1 lg:col-span-4 h-full border-slate-200 dark:border-slate-800">
               <CardHeader>
                 <CardTitle>學習趨勢</CardTitle>
-                <CardDescription>過去 7 天的複習題數。</CardDescription>
+                <CardDescription>
+                  過去 7 天的複習題數。
+                </CardDescription>
               </CardHeader>
               <CardContent className="pl-2">
-                {/* 傳入真實數據 */}
                 <Overview data={stats?.chartData || []} />
               </CardContent>
             </Card>
-            
-            {/* Recent Activity 這裡可以選擇性隱藏或也串接真實數據，為簡化先拿掉 dummy */}
-            <Card className="col-span-3">
+
+            {/* Right: Status */}
+            {/* ▼▼▼ 修改：col-span-1 lg:col-span-3 ▼▼▼ */}
+            <Card className="col-span-1 lg:col-span-3 h-full flex flex-col border-slate-200 dark:border-slate-800">
               <CardHeader>
                 <CardTitle>狀態說明</CardTitle>
               </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">
+              <CardContent className="flex-1 flex flex-col w-full">
+                <p className="text-base text-muted-foreground leading-relaxed w-full">
                   持續練習可以累積「連續打卡」天數。SM-2 演算法會根據您的答題狀況，自動安排最佳複習時間。
                 </p>
-                {/* 這裡可以放一些靜態的 Motivational Quote 或是簡易的最新牌組連結 */}
+                <div className="mt-6 p-5 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800 w-full flex-1">
+                  <h4 className="font-bold mb-3 text-sm flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+                    系統提示
+                  </h4>
+                  <ul className="text-sm text-slate-500 space-y-2">
+                    <li className="flex items-start gap-2">
+                      <span className="text-primary">•</span> 手機可使用虛擬鍵盤輸入注音
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-primary">•</span> 支援選擇題數字鍵 (1-4) 快速作答
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-primary">•</span> PC 支援鍵盤操作與 Ctrl+Enter 存檔
+                    </li>
+                  </ul>
+                </div>
               </CardContent>
             </Card>
+
           </div>
         </TabsContent>
       </Tabs>

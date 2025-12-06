@@ -45,7 +45,7 @@ export function OwnerInfo({ userId, showAvatar = true }: OwnerInfoProps) {
   }
 
   if (!profile) {
-    return <span className="text-xs text-muted-foreground">未知使用者</span>;
+    return <span className="text-muted-foreground">未知使用者</span>;
   }
 
   return (
@@ -58,7 +58,7 @@ export function OwnerInfo({ userId, showAvatar = true }: OwnerInfoProps) {
           </AvatarFallback>
         </Avatar>
       )}
-      <span className="text-xs text-muted-foreground truncate max-w-[100px]" title={profile.displayName}>
+      <span className="text-muted-foreground truncate max-w-[100px]" title={profile.displayName}>
         {profile.displayName}
       </span>
     </div>
