@@ -1,22 +1,27 @@
-import { BookOpen, Play, Search, Star } from "lucide-react";
+import { BookOpen, Heart, Play, Search, Star } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 
 import { OwnerInfo } from "@/components/shared/OwnerInfo";
+import { PageLoading } from "@/components/shared/PageLoading";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Skeleton } from "@/components/ui/skeleton";
+import { useAuth } from "@/hooks/useAuth";
 import { DeckService } from "@/services/deck-service";
+import { SubService } from "@/services/sub-service";
 import type { Deck } from "@/types/schema";
 
 export default function Library() {
+  const { user } = useAuth();
+
   const [decks, setDecks] = useState<Deck[]>([]);
   const [filteredDecks, setFilteredDecks] = useState<Deck[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [subscribedIds, setSubscribedIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const loadDecks = async () => {
@@ -24,6 +29,11 @@ export default function Library() {
         const data = await DeckService.getPublicDecks();
         setDecks(data);
         setFilteredDecks(data);
+
+        if (user) {
+          const subIds = await SubService.getUserSubscribedIds(user.uid);
+          setSubscribedIds(new Set(subIds));
+        }
       } catch (error) {
         console.error(error);
         toast.error("無法載入公開題庫");
@@ -32,11 +42,37 @@ export default function Library() {
       }
     };
     loadDecks();
-  }, []);
+  }, [user]);
+
+  const handleToggleSub = async (deck: Deck) => {
+    if (!user) return toast.error("請先登入");
+
+    // 樂觀更新 UI (Optimistic Update)
+    const isSub = subscribedIds.has(deck.id);
+    const newSet = new Set(subscribedIds);
+    if (isSub) newSet.delete(deck.id);
+    else newSet.add(deck.id);
+    setSubscribedIds(newSet);
+
+    try {
+      if (isSub) {
+        await SubService.unsubscribe(user.uid, deck.id);
+        toast.success("已取消訂閱");
+      } else {
+        await SubService.subscribe(user.uid, deck);
+        toast.success("已訂閱題庫");
+      }
+    } catch (e) {
+      // 失敗則回滾
+      setSubscribedIds(subscribedIds);
+      console.error(e); 
+      toast.error("操作失敗");
+    }
+  };
 
   useEffect(() => {
     const lowerTerm = searchTerm.toLowerCase();
-    const filtered = decks.filter(deck => 
+    const filtered = decks.filter(deck =>
       deck.title.toLowerCase().includes(lowerTerm) ||
       deck.tags?.some(tag => tag.toLowerCase().includes(lowerTerm))
     );
@@ -45,7 +81,7 @@ export default function Library() {
 
   return (
     <div className="container mx-auto p-8 space-y-8">
-      
+
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -56,7 +92,7 @@ export default function Library() {
             瀏覽社群分享的教材，加入您的學習計畫。
           </p>
         </div>
-        
+
         <div className="relative w-full md:w-72">
           <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
@@ -71,9 +107,9 @@ export default function Library() {
       {/* Grid */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {loading ? (
-          Array.from({ length: 8 }).map((_, i) => (
-            <Skeleton key={i} className="h-60 w-full rounded-xl" />
-          ))
+          <div className="py-20 col-span-full">
+            <PageLoading message="正在搜尋公開教材..." />
+          </div>
         ) : filteredDecks.length === 0 ? (
           <div className="col-span-full py-16 text-center text-slate-500 border-2 border-dashed rounded-xl bg-slate-50/50 dark:bg-slate-900/50">
             <BookOpen className="h-12 w-12 mx-auto mb-4 text-slate-300" />
@@ -83,13 +119,29 @@ export default function Library() {
         ) : (
           filteredDecks.map((deck) => (
             <Card key={deck.id} className="flex flex-col h-full hover:shadow-lg transition-all hover:-translate-y-1 duration-300 group border-slate-200 dark:border-slate-800">
+              <div className="absolute top-3 right-3 z-10">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 rounded-full bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm hover:bg-white dark:hover:bg-slate-900 shadow-sm"
+                  onClick={(e) => {
+                    e.preventDefault(); // 防止跳轉
+                    handleToggleSub(deck);
+                  }}
+                >
+                  <Heart
+                    className={`h-5 w-5 transition-colors ${subscribedIds.has(deck.id) ? "fill-rose-500 text-rose-500" : "text-slate-400"
+                      }`}
+                  />
+                </Button>
+              </div>
               <CardHeader className="flex flex-col gap-y-4 pb-4">
                 <div className="flex justify-between items-start gap-4">
                   {/* ▼▼▼ 1. 標題加大 (text-2xl) ▼▼▼ */}
                   <CardTitle className="text-2xl font-bold group-hover:text-primary transition-colors line-clamp-2 leading-tight">
                     {deck.title}
                   </CardTitle>
-                  
+
                   {deck.stats?.stars > 0 && (
                     <div className="flex items-center text-amber-500 text-xs font-bold bg-amber-50 dark:bg-amber-900/20 px-2 py-1 rounded-full shrink-0">
                       <Star className="h-3.5 w-3.5 mr-1 fill-current" />
@@ -113,7 +165,7 @@ export default function Library() {
                   )}
                 </div>
               </CardHeader>
-              
+
               <CardContent className="flex-1">
                 {/* 調整行高與顏色 */}
                 <p className="text-sm text-slate-500 dark:text-slate-400 line-clamp-3 leading-relaxed">
@@ -125,13 +177,13 @@ export default function Library() {
                 <div className="flex items-center text-muted-foreground scale-90 origin-left">
                   <OwnerInfo userId={deck.ownerId} showAvatar={true} />
                 </div>
-                
+
                 {/* ▼▼▼ 3. 按鈕加大並強調 ▼▼▼ */}
                 <Link to={`/quiz/${deck.id}`}>
-                    <Button size="default" className="gap-2 shadow-sm font-bold bg-primary hover:bg-primary/90 text-primary-foreground px-5">
-                        <Play className="h-4 w-4 fill-current" />
-                        開始練習
-                    </Button>
+                  <Button size="default" className="gap-2 shadow-sm font-bold bg-primary hover:bg-primary/90 text-primary-foreground px-5">
+                    <Play className="h-4 w-4 fill-current" />
+                    開始練習
+                  </Button>
                 </Link>
               </CardFooter>
             </Card>

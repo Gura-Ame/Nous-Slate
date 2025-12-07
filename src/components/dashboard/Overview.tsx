@@ -1,10 +1,9 @@
-import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 interface OverviewProps {
   data: { name: string; total: number }[];
 }
 
-// 為了避開 Recharts 型別定義問題，暫時使用 any
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     return (
@@ -28,16 +27,24 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 export function Overview({ data }: OverviewProps) {
   return (
     <ResponsiveContainer width="100%" height={350}>
-      <BarChart data={data}>
+      <AreaChart data={data}>
+        {/* 定義漸層顏色 */}
+        <defs>
+          <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="5%" stopColor="var(--primary)" stopOpacity={0.3}/>
+            <stop offset="95%" stopColor="var(--primary)" stopOpacity={0}/>
+          </linearGradient>
+        </defs>
+
         <XAxis
           dataKey="name"
-          stroke="var(--muted-foreground)" // 直接使用 CSS 變數 (Oklch)
+          stroke="var(--muted-foreground)"
           fontSize={12}
           tickLine={false}
           axisLine={false}
         />
         <YAxis
-          stroke="var(--muted-foreground)" // 直接使用 CSS 變數
+          stroke="var(--muted-foreground)"
           fontSize={12}
           tickLine={false}
           axisLine={false}
@@ -46,16 +53,19 @@ export function Overview({ data }: OverviewProps) {
         />
         
         <Tooltip 
-          cursor={{ fill: 'var(--muted)', opacity: 0.3 }} // 使用 muted 顏色並加上透明度
+          cursor={{ stroke: 'var(--muted-foreground)', strokeWidth: 1, strokeDasharray: '5 5' }}
           content={<CustomTooltip />}
         />
         
-        <Bar
+        <Area
+          type="monotone" // 設定為曲線
           dataKey="total"
-          fill="var(--primary)" // 直接使用主色變數
-          radius={[4, 4, 0, 0]}
+          stroke="var(--primary)"
+          strokeWidth={2}
+          fillOpacity={1}
+          fill="url(#colorTotal)" // 使用上面定義的漸層
         />
-      </BarChart>
+      </AreaChart>
     </ResponsiveContainer>
   );
 }

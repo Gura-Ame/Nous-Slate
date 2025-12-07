@@ -1,18 +1,20 @@
 import { Button } from "@/components/ui/button";
 import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { CardService } from "@/services/card-service";
-import type { CardType } from "@/types/schema";
+import type { CardContent, CardType } from "@/types/schema";
 import { FileJson, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+// 引入注音解析器
+import { parseBopomofoString, parseOneBopomofo } from "@/lib/bopomofo-utils";
 
 interface ImportJsonDialogProps {
   deckId: string;
@@ -27,27 +29,65 @@ export function ImportJsonDialog({ deckId, onSuccess }: ImportJsonDialogProps) {
   const handleImport = async () => {
     setIsImporting(true);
     try {
-      const data = JSON.parse(jsonInput);
+      let data: any[];
+      try {
+        data = JSON.parse(jsonInput);
+      } catch (e) {
+        throw new Error("JSON 格式錯誤，請檢查語法");
+      }
+
       if (!Array.isArray(data)) throw new Error("JSON 必須是一個陣列 []");
 
       let count = 0;
-      // 批次寫入 (簡單迴圈)
       for (const item of data) {
-        // 簡單驗證
+        // 基礎驗證
         if (!item.stem || !item.type) continue;
 
         const type: CardType = item.type;
-        let content: any = { stem: item.stem, meaning: item.meaning || "" };
+        
+        // 基礎內容
+        let content: CardContent = { 
+          stem: item.stem, 
+          meaning: item.meaning || "",
+          image: item.image || undefined,
+          audioUrl: item.audioUrl || undefined,
+        };
 
-        if (type === 'choice') {
-          content.answer = item.answer;
-          content.options = item.options || [];
-        } else if (type === 'fill_blank') {
-          content.answer = item.answer;
-        } else if (type === 'term') {
-           // 這裡省略複雜的注音解析，假設 JSON 已經是正確結構或由後台自動補
-           // 如果要支援 Term 匯入，需要在这里呼叫 parseBopomofoString
-           continue; 
+        // 根據題型處理特殊欄位
+        switch (type) {
+          case 'term':
+            // 國字注音：如果 JSON 有給 zhuyinRaw (例如 "ㄧㄣˊ ㄏㄤˊ")，自動解析
+            if (item.zhuyinRaw) {
+              const bopomofoList = parseBopomofoString(item.zhuyinRaw);
+              const chars = item.stem.split("");
+              content.blocks = chars.map((char: string, index: number) => ({
+                char,
+                zhuyin: bopomofoList[index] || parseOneBopomofo("")
+              }));
+            } else if (item.blocks) {
+              // 如果 JSON 直接提供 blocks 結構，直接用
+              content.blocks = item.blocks;
+            }
+            break;
+
+          case 'choice':
+            content.answer = item.answer;
+            content.options = item.options || [];
+            break;
+
+          case 'fill_blank':
+            content.answer = item.answer;
+            break;
+            
+          case 'flashcard':
+            // Flashcard 通常只需要 stem, meaning, audioUrl，基礎內容已包含
+            break;
+            
+          default:
+            // 未來的新題型：如果 JSON 有給其他欄位，直接 spread 進去
+            // 這讓匯入器具有向前兼容性
+            content = { ...content, ...item };
+            break;
         }
 
         await CardService.createCard(deckId, type, content);
@@ -58,57 +98,69 @@ export function ImportJsonDialog({ deckId, onSuccess }: ImportJsonDialogProps) {
       setOpen(false);
       setJsonInput("");
       onSuccess();
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      toast.error("匯入失敗，請檢查 JSON 格式");
+      toast.error(error.message || "匯入失敗");
     } finally {
       setIsImporting(false);
     }
   };
 
+  // 範例 JSON，展示所有支援格式
   const exampleJson = `[
+  {
+    "type": "term",
+    "stem": "銀行",
+    "zhuyinRaw": "ㄧㄣˊ ㄏㄤˊ", 
+    "meaning": "辦理存款、放款、匯兌等業務的金融機構。"
+  },
   {
     "type": "choice",
     "stem": "太陽從哪邊升起？",
     "answer": "東邊",
-    "options": ["西邊", "南邊", "北邊"],
-    "meaning": "自然常識"
+    "options": ["西邊", "南邊", "北邊"]
   },
   {
     "type": "fill_blank",
     "stem": "一___驚人",
     "answer": "鳴"
+  },
+  {
+    "type": "flashcard",
+    "stem": "Epiphany",
+    "meaning": "頓悟 (n.)",
+    "audioUrl": "https://..."
   }
 ]`;
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" className="gap-2">
+        <Button variant="outline" size="sm" className="gap-2">
           <FileJson className="h-4 w-4" /> JSON 匯入
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-2xl">
+      <DialogContent className="sm:max-w-2xl max-h-[80vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>批次匯入題目</DialogTitle>
           <DialogDescription>
-            請貼上符合格式的 JSON 陣列。目前支援選擇題與填空題。
+            支援所有題型。請貼上 JSON 陣列。
           </DialogDescription>
         </DialogHeader>
         
-        <div className="grid gap-4 py-4">
+        <div className="flex-1 py-4 min-h-0">
           <Textarea 
-            className="font-mono text-xs h-[300px]" 
+            className="font-mono text-xs h-full min-h-[300px] resize-none" 
             placeholder={exampleJson}
             value={jsonInput}
             onChange={(e) => setJsonInput(e.target.value)}
           />
-          <p className="text-xs text-muted-foreground">
-            * 提示：上方是範例格式，請複製參考。
-          </p>
         </div>
 
-        <div className="flex justify-end">
+        <div className="flex justify-end gap-2 shrink-0">
+          <Button variant="outline" onClick={() => setJsonInput(exampleJson)}>
+            載入範例
+          </Button>
           <Button onClick={handleImport} disabled={isImporting || !jsonInput}>
             {isImporting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             開始匯入

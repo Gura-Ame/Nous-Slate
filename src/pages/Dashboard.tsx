@@ -6,9 +6,10 @@ import { Link } from "react-router-dom";
 
 // Components
 import { Overview } from "@/components/dashboard/Overview";
+import { PageLoading } from "@/components/shared/PageLoading";
+import { StatCard } from "@/components/shared/StatCard";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function Dashboard() {
@@ -32,13 +33,7 @@ export default function Dashboard() {
   }, [user]);
 
   if (loading) {
-    return <div className="p-8 space-y-4">
-      <Skeleton className="h-12 w-1/3" />
-      <div className="grid gap-4 md:grid-cols-4">
-        {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-32" />)}
-      </div>
-      <Skeleton className="h-[400px]" />
-    </div>;
+    return <PageLoading message="正在分析學習數據..." />;
   }
 
   return (
@@ -70,46 +65,31 @@ export default function Dashboard() {
 
           {/* Top Cards (4 Grid) */}
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+            <StatCard
+              title="總複習次數"
+              value={stats?.totalReviews || 0}
+              icon={History}
+            />
 
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-base font-medium text-slate-600 dark:text-slate-400">總複習次數</CardTitle>
-                <History className="h-6 w-6 text-muted-foreground opacity-70" /> {/* 加大圖示 */}
-              </CardHeader>
-              <CardContent>
-                <div className="text-4xl font-bold">{stats?.totalReviews || 0}</div> {/* 加大數字 */}
-              </CardContent>
-            </Card>
+            <StatCard
+              title="今日複習"
+              value={stats?.todayCount || 0}
+              icon={BrainCircuit}
+              valueClassName="text-primary" // 特別強調這一個數字
+            />
 
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-base font-medium text-slate-600 dark:text-slate-400">今日複習</CardTitle>
-                <BrainCircuit className="h-6 w-6 text-muted-foreground opacity-70" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-4xl font-bold text-primary">{stats?.todayCount || 0}</div>
-              </CardContent>
-            </Card>
+            <StatCard
+              title="連續打卡"
+              value={`${stats?.streak || 0} 天`}
+              icon={Flame}
+              iconClassName="text-orange-500" // 指定圖標顏色
+            />
 
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-base font-medium text-slate-600 dark:text-slate-400">連續打卡</CardTitle>
-                <Flame className="h-6 w-6 text-orange-500" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-4xl font-bold">{stats?.streak || 0} <span className="text-lg font-normal text-muted-foreground">天</span></div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-base font-medium text-slate-600 dark:text-slate-400">擁有題庫</CardTitle>
-                <BookOpen className="h-6 w-6 text-muted-foreground opacity-70" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-4xl font-bold">{stats?.totalDecks || 0}</div>
-              </CardContent>
-            </Card>
+            <StatCard
+              title="擁有題庫"
+              value={stats?.totalDecks || 0}
+              icon={BookOpen}
+            />
           </div>
 
           {/* Main Content Grid */}

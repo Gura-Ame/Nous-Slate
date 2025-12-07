@@ -1,6 +1,8 @@
 import { Button } from "@/components/ui/button";
+import { speak } from "@/lib/tts";
 import { cn } from "@/lib/utils";
 import type { Card } from "@/types/schema";
+import { Volume2 } from "lucide-react";
 import { useEffect, useState } from "react";
 
 interface FlashcardModeProps {
@@ -29,10 +31,20 @@ export function FlashcardMode({ card, status, onRate }: FlashcardModeProps) {
     };
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
-  }, [status, isFlipped]);
+  }, [status, isFlipped, onRate]);
+
+  const handlePlayAudio = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (card.content.audioUrl) {
+      new Audio(card.content.audioUrl).play();
+    } else {
+      speak(card.content.stem);
+    }
+  };
 
   return (
-    <div className="w-full max-w-md perspective-1000 h-80">
+    // 修改：h-[400px] 改為 h-[50vh] max-h-[500px]，確保在各種螢幕都大致居中
+    <div className="w-full max-w-md perspective-1000 h-[50vh] max-h-[500px] flex flex-col justify-center">
       <div 
         className={cn(
           "relative w-full h-full transition-transform duration-500 transform-style-3d cursor-pointer",
@@ -40,31 +52,76 @@ export function FlashcardMode({ card, status, onRate }: FlashcardModeProps) {
         )}
         onClick={() => setIsFlipped(!isFlipped)}
       >
-        <div className="absolute inset-0 backface-hidden bg-white dark:bg-slate-900 border-2 rounded-2xl flex flex-col items-center justify-center p-8 shadow-sm">
-          <h2 className="text-5xl font-bold mb-4 text-center wrap-break-word w-full">{card.content.stem}</h2>
-          <p className="text-slate-400 text-sm animate-pulse">點擊翻面 (Space)</p>
+        {/* --- Front (正面) --- */}
+        <div className={cn(
+          "absolute inset-0 backface-hidden bg-white dark:bg-slate-900 border-2 rounded-2xl flex flex-col items-center justify-center p-8 shadow-xl hover:shadow-2xl transition-all",
+          isFlipped ? "invisible pointer-events-none" : "visible"
+        )}>
+          {card.content.image ? (
+            <>
+              <img 
+                src={card.content.image} 
+                alt="Flashcard" 
+                className="h-32 w-auto object-contain mb-4 rounded-md"
+              />
+              <h2 className="text-3xl font-bold mb-2 text-center wrap-break-word w-full">
+                {card.content.stem}
+              </h2>
+            </>
+          ) : (
+            <div className="flex-1 flex items-center justify-center w-full">
+              <h2 className="text-6xl font-bold text-center wrap-break-word leading-tight">
+                {card.content.stem}
+              </h2>
+            </div>
+          )}
+
+          <p className="text-slate-400 text-sm animate-pulse mt-auto pt-4">
+            點擊翻面 (Space)
+          </p>
         </div>
         
-        <div className="absolute inset-0 backface-hidden bg-slate-50 dark:bg-slate-800 border-2 border-primary rounded-2xl flex flex-col items-center justify-center p-8 shadow-sm rotate-y-180">
-          <div className="text-lg text-center mb-6 whitespace-pre-wrap overflow-y-auto w-full max-h-[180px]">
+        {/* --- Back (背面) --- */}
+        <div className={cn(
+          "absolute inset-0 backface-hidden bg-slate-50 dark:bg-slate-800 border-2 border-primary rounded-2xl flex flex-col items-center justify-center p-8 shadow-xl rotate-y-180",
+          !isFlipped ? "invisible pointer-events-none" : "visible"
+        )}>
+          <div className="text-lg text-center mb-6 whitespace-pre-wrap overflow-y-auto w-full flex-1 flex flex-col justify-center leading-relaxed">
             {card.content.meaning}
           </div>
-          {card.content.audioUrl && (
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={(e) => { e.stopPropagation(); new Audio(card.content.audioUrl).play(); }}
-            >
-              播放發音
-            </Button>
-          )}
+          
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handlePlayAudio}
+            className="gap-2 shrink-0 mt-auto"
+          >
+            <Volume2 className="h-4 w-4" />
+            {card.content.audioUrl ? "播放發音" : "朗讀 (TTS)"}
+          </Button>
         </div>
       </div>
 
+      {/* 評分按鈕 (優化顏色) */}
       {isFlipped && (
-        <div className="flex justify-center gap-4 mt-8 animate-in fade-in slide-in-from-top-2">
-          <Button variant="destructive" className="w-32" onClick={() => onRate(false)}>忘記了 (1)</Button>
-          <Button className="bg-emerald-600 hover:bg-emerald-700 w-32" onClick={() => onRate(true)}>記住了 (2)</Button>
+        // 使用 absolute positioning 讓按鈕懸浮在卡片下方，不影響卡片本身的置中
+        <div className="absolute -bottom-20 left-0 right-0 flex justify-center gap-6 animate-in fade-in slide-in-from-top-2">
+          
+          {/* 忘記了：使用 Rose 色系，實心背景 */}
+          <Button 
+            className="w-32 bg-rose-500 hover:bg-rose-600 text-white border-rose-600 shadow-md font-bold text-lg h-12" 
+            onClick={() => onRate(false)}
+          >
+            <span className="mr-2 opacity-70 text-sm font-normal">1</span> 忘記了
+          </Button>
+          
+          {/* 記住了：使用 Emerald 色系，實心背景 */}
+          <Button 
+            className="w-32 bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-700 shadow-md font-bold text-lg h-12" 
+            onClick={() => onRate(true)}
+          >
+            <span className="mr-2 opacity-70 text-sm font-normal">2</span> 記住了
+          </Button>
         </div>
       )}
     </div>

@@ -11,6 +11,8 @@ import Login from "@/pages/Login"; // 新增
 import Profile from "@/pages/Profile";
 import QuizSession from "@/pages/QuizSession";
 import Settings from "@/pages/Settings";
+import AdCenter from "./pages/AdCenter";
+import ReviewCenter from "./pages/ReviewCenter";
 
 export default function App() {
   return (
@@ -18,7 +20,7 @@ export default function App() {
       <Routes>
         {/* 1. 公開路由 (不需要 Sidebar) */}
         <Route path="/login" element={<Login />} />
-        
+
         {/* 2. 受保護路由 (由 AppLayout 保護，未登入會被踢去 /login) */}
         <Route element={<AppLayout />}>
           <Route path="/" element={<Dashboard />} />
@@ -27,6 +29,8 @@ export default function App() {
           <Route path="/editor/:deckId" element={<DeckEditor />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/ad-center" element={<AdCenter />} />
+          <Route path="/review" element={<ReviewCenter />} />
         </Route>
 
         {/* 3. 練習模式 (全螢幕，不需要 Sidebar，但也需要登入保護) */}
@@ -42,8 +46,8 @@ export default function App() {
         {/* 404 */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-      
-      <Toaster />
+
+      <Toaster richColors position="top-center" />
     </HashRouter>
   );
 }

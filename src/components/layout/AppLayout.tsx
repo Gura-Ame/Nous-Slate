@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
-import { LayoutDashboard, Library, LogOut, Menu, PenTool, Settings } from "lucide-react";
+import { BrainCircuit, Coins, LayoutDashboard, Library, LogOut, Menu, PenTool, Settings } from "lucide-react";
 import { useState } from "react";
 import { Link, Navigate, Outlet, useLocation } from "react-router-dom";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "../ui/sheet";
@@ -24,6 +24,8 @@ export function AppLayout() {
     { href: "/library", label: "探索題庫", icon: Library },
     { href: "/editor", label: "創作後台", icon: PenTool },
     { href: "/settings", label: "設定", icon: Settings },
+    { href: "/ad-center", label: "積分中心", icon: Coins },
+    { href: "/review", label: "今日複習", icon: BrainCircuit },
   ];
 
   // 抽離出 NavContent，讓 Desktop Sidebar 和 Mobile Sheet 共用
@@ -47,8 +49,8 @@ export function AppLayout() {
               onClick={() => setOpen(false)} // 手機版點擊後自動關閉選單
               className={cn(
                 "flex items-center gap-3 px-4 py-3 rounded-lg transition-colors font-medium",
-                isActive 
-                  ? "bg-slate-100 text-slate-900 dark:bg-slate-800 dark:text-slate-100" 
+                isActive
+                  ? "bg-slate-100 text-slate-900 dark:bg-slate-800 dark:text-slate-100"
                   : "text-slate-500 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800"
               )}
             >
@@ -64,7 +66,7 @@ export function AppLayout() {
           <div className="flex items-center justify-between">
             <Link to="/profile" onClick={() => setOpen(false)} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
               {user.photoURL && (
-                 <img src={user.photoURL} className="w-8 h-8 rounded-full" />
+                <img src={user.photoURL} className="w-8 h-8 rounded-full" />
               )}
               <div className="text-sm">
                 <p className="font-medium truncate max-w-[100px] text-slate-700 dark:text-slate-200">{user.displayName}</p>
@@ -83,14 +85,14 @@ export function AppLayout() {
 
   return (
     <div className="h-screen w-full bg-slate-50 dark:bg-slate-950 flex flex-col md:flex-row overflow-hidden">
-      
+
       {/* 1. Mobile Header (只在手機顯示 md:hidden) */}
       <header className="md:hidden h-16 border-b bg-white dark:bg-slate-900 flex items-center px-4 justify-between shrink-0">
         <div className="flex items-center gap-2 font-serif font-bold text-lg">
-           <span className="w-6 h-6 bg-slate-900 text-white rounded flex items-center justify-center text-xs">N</span>
-           Nous Slate
+          <span className="w-6 h-6 bg-slate-900 text-white rounded flex items-center justify-center text-xs">N</span>
+          Nous Slate
         </div>
-        
+
         {/* 漢堡選單 */}
         <Sheet open={open} onOpenChange={setOpen}>
           <SheetTrigger asChild>

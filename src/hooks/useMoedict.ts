@@ -1,11 +1,15 @@
-// src/hooks/useMoedict.ts
 import { useState } from 'react';
+import { toast } from "sonner";
 
-// 定義萌典 API 回傳的精簡結構
-interface MoedictResult {
-  title: string;
+// 定義單個讀音的結構
+export interface MoedictHeteronym {
   bopomofo: string; // "ㄧㄣˊ ㄏㄤˊ"
-  definition: string;
+  definition: string; // 已清洗的釋義
+}
+
+export interface MoedictResult {
+  title: string;
+  heteronyms: MoedictHeteronym[]; // 改成陣列
 }
 
 export function useMoedict() {
@@ -13,35 +17,37 @@ export function useMoedict() {
 
   const search = async (word: string): Promise<MoedictResult | null> => {
     if (!word) return null;
-    
     setLoading(true);
     try {
-      // 萌典 API: https://www.moedict.tw/uni/{詞}
       const response = await fetch(`https://www.moedict.tw/uni/${encodeURIComponent(word)}`);
-      
-      if (!response.ok) {
-        throw new Error("Not found");
-      }
+      if (!response.ok) throw new Error("Not found");
 
       const data = await response.json();
       
-      // 解析資料 (萌典的結構有點複雜，我們取第一個最常用的讀音)
-      // data.heteronyms 是「異讀字」陣列 (破音字)
-      const firstHeteronym = data.heteronyms?.[0];
-      
-      if (!firstHeteronym) return null;
+      // 解析所有異讀字 (Heteronyms)
+      const heteronyms: MoedictHeteronym[] = (data.heteronyms || []).map((h: any) => {
+        // 清洗定義 (移除 HTML 標籤，只取前 2 個)
+        const defs = (h.definitions || [])
+          .slice(0, 2)
+          .map((d: any) => d.def.replace(/<[^>]*>?/gm, ''))
+          .join("\n");
 
-      // 組合解釋：取第一個 definition
-      const firstDefinition = firstHeteronym.definitions?.[0]?.def || "";
+        return {
+          bopomofo: h.bopomofo || "",
+          definition: defs
+        };
+      }).filter((h: MoedictHeteronym) => h.bopomofo); // 過濾掉沒注音的
+
+      if (heteronyms.length === 0) return null;
 
       return {
         title: data.title,
-        bopomofo: firstHeteronym.bopomofo, // e.g., "ㄧㄣˊ ㄏㄤˊ"
-        definition: firstDefinition
+        heteronyms
       };
 
     } catch (error) {
       console.warn("Moedict search failed:", error);
+      toast.error("萌典查無此詞");
       return null;
     } finally {
       setLoading(false);

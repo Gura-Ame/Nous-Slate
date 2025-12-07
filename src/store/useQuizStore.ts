@@ -1,7 +1,7 @@
 import type { Card } from '@/types/schema';
 import { create } from 'zustand';
 
-type QuizStatus = 'idle' | 'question' | 'success' | 'failure' | 'finished';
+export type QuizStatus = 'idle' | 'question' | 'success' | 'failure' | 'finished';
 
 interface QuizState {
   cards: Card[];           // 本次練習的所有卡片
