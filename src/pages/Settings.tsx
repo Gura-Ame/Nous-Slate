@@ -1,3 +1,4 @@
+import { PageHeader } from "@/components/layout/PageHeader";
 import { useTheme } from "@/components/theme-provider";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,10 +11,7 @@ export default function Settings() {
   
   return (
     <div className="container mx-auto p-8 space-y-8 max-w-3xl">
-      <h2 className="text-3xl font-bold text-slate-900 dark:text-slate-100">
-        設定
-      </h2>
-
+      <PageHeader title="設定" description="管理介面偏好與學習設定。" />
       {/* 外觀設定 */}
       <Card>
         <CardHeader>

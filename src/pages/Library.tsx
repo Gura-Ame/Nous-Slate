@@ -1,14 +1,16 @@
-import { BookOpen, Heart, Play, Search, Star } from "lucide-react";
+import { BookOpen, Play, Search, Star, User as UserIcon } from "lucide-react"; // 改用 Star
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 
+import { PageHeader } from "@/components/layout/PageHeader";
 import { OwnerInfo } from "@/components/shared/OwnerInfo";
-import { PageLoading } from "@/components/shared/PageLoading";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
+
 import { useAuth } from "@/hooks/useAuth";
 import { DeckService } from "@/services/deck-service";
 import { SubService } from "@/services/sub-service";
@@ -16,7 +18,6 @@ import type { Deck } from "@/types/schema";
 
 export default function Library() {
   const { user } = useAuth();
-
   const [decks, setDecks] = useState<Deck[]>([]);
   const [filteredDecks, setFilteredDecks] = useState<Deck[]>([]);
   const [loading, setLoading] = useState(true);
@@ -24,75 +25,79 @@ export default function Library() {
   const [subscribedIds, setSubscribedIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    const loadDecks = async () => {
+    const loadData = async () => {
       try {
-        const data = await DeckService.getPublicDecks();
-        setDecks(data);
-        setFilteredDecks(data);
-
-        if (user) {
-          const subIds = await SubService.getUserSubscribedIds(user.uid);
-          setSubscribedIds(new Set(subIds));
-        }
+        const [publicDecks, userSubs] = await Promise.all([
+          DeckService.getPublicDecks(),
+          user ? SubService.getUserSubscribedIds(user.uid) : Promise.resolve([])
+        ]);
+        
+        setDecks(publicDecks);
+        setFilteredDecks(publicDecks);
+        setSubscribedIds(new Set(userSubs));
       } catch (error) {
         console.error(error);
-        toast.error("無法載入公開題庫");
+        toast.error("載入失敗");
       } finally {
         setLoading(false);
       }
     };
-    loadDecks();
+    loadData();
   }, [user]);
-
-  const handleToggleSub = async (deck: Deck) => {
-    if (!user) return toast.error("請先登入");
-
-    // 樂觀更新 UI (Optimistic Update)
-    const isSub = subscribedIds.has(deck.id);
-    const newSet = new Set(subscribedIds);
-    if (isSub) newSet.delete(deck.id);
-    else newSet.add(deck.id);
-    setSubscribedIds(newSet);
-
-    try {
-      if (isSub) {
-        await SubService.unsubscribe(user.uid, deck.id);
-        toast.success("已取消訂閱");
-      } else {
-        await SubService.subscribe(user.uid, deck);
-        toast.success("已訂閱題庫");
-      }
-    } catch (e) {
-      // 失敗則回滾
-      setSubscribedIds(subscribedIds);
-      console.error(e); 
-      toast.error("操作失敗");
-    }
-  };
 
   useEffect(() => {
     const lowerTerm = searchTerm.toLowerCase();
-    const filtered = decks.filter(deck =>
+    const filtered = decks.filter(deck => 
       deck.title.toLowerCase().includes(lowerTerm) ||
       deck.tags?.some(tag => tag.toLowerCase().includes(lowerTerm))
     );
     setFilteredDecks(filtered);
   }, [searchTerm, decks]);
 
+  const handleToggleSub = async (deck: Deck) => {
+    if (!user) return toast.error("請先登入");
+
+    const isSub = subscribedIds.has(deck.id);
+    
+    // Optimistic Update
+    const newSet = new Set(subscribedIds);
+    if (isSub) newSet.delete(deck.id);
+    else newSet.add(deck.id);
+    setSubscribedIds(newSet);
+
+    setDecks(prev => prev.map(d => {
+      if (d.id === deck.id) {
+        return {
+          ...d,
+          stats: {
+            ...d.stats,
+            subscribers: d.stats.subscribers + (isSub ? -1 : 1)
+          }
+        };
+      }
+      return d;
+    }));
+
+    try {
+      if (isSub) {
+        await SubService.unsubscribe(user.uid, deck.id);
+        toast.success("已取消收藏");
+      } else {
+        await SubService.subscribe(user.uid, deck);
+        toast.success("已收藏題庫");
+      }
+    } catch (e) {
+      toast.error("操作失敗");
+    }
+  };
+
   return (
     <div className="container mx-auto p-8 space-y-8">
-
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
-            探索題庫
-          </h2>
-          <p className="text-muted-foreground mt-1">
-            瀏覽社群分享的教材，加入您的學習計畫。
-          </p>
-        </div>
-
+      
+      <PageHeader
+        title="探索題庫"
+        description="瀏覽社群分享的教材，加入您的學習計畫。"
+      >
         <div className="relative w-full md:w-72">
           <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
@@ -102,92 +107,100 @@ export default function Library() {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-      </div>
+      </PageHeader>
 
-      {/* Grid */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {loading ? (
-          <div className="py-20 col-span-full">
-            <PageLoading message="正在搜尋公開教材..." />
-          </div>
+          Array.from({ length: 8 }).map((_, i) => (
+            <Skeleton key={i} className="h-[240px] w-full rounded-xl" />
+          ))
         ) : filteredDecks.length === 0 ? (
           <div className="col-span-full py-16 text-center text-slate-500 border-2 border-dashed rounded-xl bg-slate-50/50 dark:bg-slate-900/50">
             <BookOpen className="h-12 w-12 mx-auto mb-4 text-slate-300" />
             <p className="text-lg font-medium">找不到相關題庫</p>
-            <p className="text-sm">試著搜尋其他關鍵字。</p>
           </div>
         ) : (
-          filteredDecks.map((deck) => (
-            <Card key={deck.id} className="flex flex-col h-full hover:shadow-lg transition-all hover:-translate-y-1 duration-300 group border-slate-200 dark:border-slate-800">
-              <div className="absolute top-3 right-3 z-10">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 rounded-full bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm hover:bg-white dark:hover:bg-slate-900 shadow-sm"
-                  onClick={(e) => {
-                    e.preventDefault(); // 防止跳轉
-                    handleToggleSub(deck);
-                  }}
-                >
-                  <Heart
-                    className={`h-5 w-5 transition-colors ${subscribedIds.has(deck.id) ? "fill-rose-500 text-rose-500" : "text-slate-400"
-                      }`}
-                  />
-                </Button>
-              </div>
-              <CardHeader className="flex flex-col gap-y-4 pb-4">
-                <div className="flex justify-between items-start gap-4">
-                  {/* ▼▼▼ 1. 標題加大 (text-2xl) ▼▼▼ */}
-                  <CardTitle className="text-2xl font-bold group-hover:text-primary transition-colors line-clamp-2 leading-tight">
-                    {deck.title}
-                  </CardTitle>
-
-                  {deck.stats?.stars > 0 && (
-                    <div className="flex items-center text-amber-500 text-xs font-bold bg-amber-50 dark:bg-amber-900/20 px-2 py-1 rounded-full shrink-0">
-                      <Star className="h-3.5 w-3.5 mr-1 fill-current" />
-                      {deck.stats.stars}
+          filteredDecks.map((deck) => {
+            const isSubscribed = subscribedIds.has(deck.id);
+            
+            return (
+              <Card key={deck.id} className="flex flex-col h-full hover:shadow-lg transition-all hover:-translate-y-1 duration-300 group border-slate-200 dark:border-slate-800">
+                
+                {/* Header 區域：標題與星星並排 */}
+                <CardHeader className="space-y-3 pb-3">
+                  <div className="flex justify-between items-start gap-3">
+                    
+                    {/* 左側：標題與 Tag */}
+                    <div className="space-y-2 flex-1 min-w-0"> {/* min-w-0 確保 truncate 生效 */}
+                      <CardTitle className="text-xl font-bold group-hover:text-primary transition-colors truncate" title={deck.title}>
+                        {deck.title}
+                      </CardTitle>
+                      
+                      {/* Tag List */}
+                      <div className="flex flex-wrap gap-1.5 h-6 overflow-hidden">
+                        {deck.tags && deck.tags.length > 0 ? (
+                          deck.tags.map(tag => (
+                            <Badge key={tag} variant="secondary" className="text-[10px] px-1.5 py-0 font-normal">
+                              #{tag}
+                            </Badge>
+                          ))
+                        ) : (
+                          <Badge variant="outline" className="text-[10px] px-1.5 py-0 font-normal text-muted-foreground border-dashed">
+                            未分類
+                          </Badge>
+                        )}
+                      </div>
                     </div>
-                  )}
-                </div>
 
-                {/* ▼▼▼ 2. 標籤加大 (text-xs) 並調整間距 ▼▼▼ */}
-                <div className="flex flex-wrap gap-2">
-                  {deck.tags && deck.tags.length > 0 ? (
-                    deck.tags.map(tag => (
-                      <Badge key={tag} variant="secondary" className="text-xs px-2 py-0.5 font-normal bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200">
-                        #{tag}
-                      </Badge>
-                    ))
-                  ) : (
-                    <Badge variant="outline" className="text-xs px-2 py-0.5 font-normal text-muted-foreground border-dashed">
-                      未分類
-                    </Badge>
-                  )}
-                </div>
-              </CardHeader>
+                    {/* 右側：星星按鈕 (不使用 absolute) */}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className={`h-8 px-2 shrink-0 transition-colors ${
+                         isSubscribed 
+                           ? "text-amber-400 hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/20" 
+                           : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                      }`}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        handleToggleSub(deck);
+                      }}
+                    >
+                      {/* 實心星星 vs 空心星星 */}
+                      <Star 
+                        className={`h-5 w-5 mr-1 ${
+                          isSubscribed ? "fill-current" : ""
+                        }`} 
+                      />
+                      <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
+                        {deck.stats.subscribers || 0}
+                      </span>
+                    </Button>
+                  </div>
+                </CardHeader>
+                
+                <CardContent className="flex-1 pt-0">
+                  <p className="text-sm text-muted-foreground line-clamp-3 min-h-[3rem]">
+                    {deck.description || "這個題庫沒有描述。"}
+                  </p>
+                </CardContent>
 
-              <CardContent className="flex-1">
-                {/* 調整行高與顏色 */}
-                <p className="text-sm text-slate-500 dark:text-slate-400 line-clamp-3 leading-relaxed">
-                  {deck.description || "這個題庫沒有描述。"}
-                </p>
-              </CardContent>
-
-              <CardFooter className="pt-4 px-6 border-t bg-slate-50/50 dark:bg-slate-900/30 flex justify-between items-center">
-                <div className="flex items-center text-muted-foreground scale-90 origin-left">
-                  <OwnerInfo userId={deck.ownerId} showAvatar={true} />
-                </div>
-
-                {/* ▼▼▼ 3. 按鈕加大並強調 ▼▼▼ */}
-                <Link to={`/quiz/${deck.id}`}>
-                  <Button size="default" className="gap-2 shadow-sm font-bold bg-primary hover:bg-primary/90 text-primary-foreground px-5">
-                    <Play className="h-4 w-4 fill-current" />
-                    開始練習
-                  </Button>
-                </Link>
-              </CardFooter>
-            </Card>
-          ))
+                <CardFooter className="pt-4 border-t bg-slate-50/50 dark:bg-slate-900/50 flex justify-between items-center text-sm">
+                  <div className="flex items-center text-muted-foreground">
+                    <UserIcon className="h-3.5 w-3.5 mr-2" />
+                    <OwnerInfo userId={deck.ownerId} showAvatar={false} />
+                  </div>
+                  
+                  <Link to={`/quiz/${deck.id}`}>
+                      <Button size="sm" className="gap-2 shadow-sm">
+                          <Play className="h-3.5 w-3.5 fill-current" />
+                          開始練習
+                      </Button>
+                  </Link>
+                </CardFooter>
+              </Card>
+            );
+          })
         )}
       </div>
     </div>

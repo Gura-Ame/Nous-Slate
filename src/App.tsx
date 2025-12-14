@@ -1,8 +1,7 @@
-import { Toaster } from "@/components/ui/sonner";
 import { HashRouter, Navigate, Route, Routes } from "react-router-dom";
-
 // Layouts & Pages
 import { AppLayout } from "@/components/layout/AppLayout";
+import { Toaster } from "@/components/ui/sonner";
 import Dashboard from "@/pages/Dashboard";
 import DeckEditor from "@/pages/DeckEditor";
 import Editor from "@/pages/Editor";
@@ -12,7 +11,9 @@ import Profile from "@/pages/Profile";
 import QuizSession from "@/pages/QuizSession";
 import Settings from "@/pages/Settings";
 import AdCenter from "./pages/AdCenter";
+import Privacy from "./pages/Privacy";
 import ReviewCenter from "./pages/ReviewCenter";
+import Terms from "./pages/Terms";
 
 export default function App() {
   return (
@@ -31,6 +32,8 @@ export default function App() {
           <Route path="/settings" element={<Settings />} />
           <Route path="/ad-center" element={<AdCenter />} />
           <Route path="/review" element={<ReviewCenter />} />
+          <Route path="/terms" element={<Terms />} />
+          <Route path="/privacy" element={<Privacy />} />
         </Route>
 
         {/* 3. 練習模式 (全螢幕，不需要 Sidebar，但也需要登入保護) */}

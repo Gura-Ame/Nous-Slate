@@ -21,6 +21,7 @@ import type { Deck } from "@/types/schema";
 // ▼▼▼ 這裡只引入 DeckDialog，不要引入 EditDeckDialog ▼▼▼
 import { DeckDialog } from "@/components/editor/DeckDialog";
 import { ImportDeckDialog } from "@/components/editor/ImportDeckDialog";
+import { PageHeader } from "@/components/layout/PageHeader";
 
 export default function Editor() {
   const { user } = useAuth();
@@ -69,21 +70,15 @@ export default function Editor() {
 
   return (
     <div className="container mx-auto p-8 space-y-8">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100">創作後台</h2>
-          <p className="text-muted-foreground">管理您的題庫與卡片。</p>
-        </div>
-        <div className="flex gap-2">
-          <ImportDeckDialog onSuccess={fetchDecks} />
-          
-          {/* 建立按鈕：呼叫 openDialog() */}
-          <Button onClick={() => openDialog()}>
-            <Plus className="mr-2 h-4 w-4" /> 建立新題庫
-          </Button>
-        </div>
-      </div>
+      <PageHeader 
+        title="創作後台" 
+        description="管理您的題庫與卡片。"
+      >
+        <ImportDeckDialog onSuccess={fetchDecks} />
+        <Button onClick={() => openDialog()}>
+          <Plus className="mr-2 h-4 w-4" /> 建立新題庫
+        </Button>
+      </PageHeader>
 
       {/* Grid List */}
       {decks.length === 0 ? (

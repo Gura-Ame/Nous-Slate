@@ -31,7 +31,7 @@ export function AppLayout() {
   // 抽離出 NavContent，讓 Desktop Sidebar 和 Mobile Sheet 共用
   const NavContent = () => (
     <div className="flex flex-col h-full">
-      <div className="p-6">
+      <div className="h-20 flex items-center px-6 border-b dark:border-slate-800">
         <h1 className="text-2xl font-bold font-serif text-slate-800 dark:text-slate-100 flex items-center gap-2">
           <span className="w-8 h-8 bg-slate-900 text-white rounded flex items-center justify-center text-lg">N</span>
           Nous Slate
@@ -66,10 +66,10 @@ export function AppLayout() {
           <div className="flex items-center justify-between">
             <Link to="/profile" onClick={() => setOpen(false)} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
               {user.photoURL && (
-                <img src={user.photoURL} className="w-8 h-8 rounded-full" />
+                <img src={user.photoURL} alt={user.displayName || "User profile"} className="w-8 h-8 rounded-full" />
               )}
               <div className="text-sm">
-                <p className="font-medium truncate max-w-[100px] text-slate-700 dark:text-slate-200">{user.displayName}</p>
+                <p className="font-medium truncate max-w-25 text-slate-700 dark:text-slate-200">{user.displayName}</p>
               </div>
             </Link>
             <Button variant="ghost" size="icon" onClick={logout} title="登出">
@@ -87,10 +87,10 @@ export function AppLayout() {
     <div className="h-screen w-full bg-slate-50 dark:bg-slate-950 flex flex-col md:flex-row overflow-hidden">
 
       {/* 1. Mobile Header (只在手機顯示 md:hidden) */}
-      <header className="md:hidden h-16 border-b bg-white dark:bg-slate-900 flex items-center px-4 justify-between shrink-0">
-        <div className="flex items-center gap-2 font-serif font-bold text-lg">
-          <span className="w-6 h-6 bg-slate-900 text-white rounded flex items-center justify-center text-xs">N</span>
-          Nous Slate
+      <header className="md:hidden h-16 border-b bg-white dark:bg-slate-900 flex items-center px-6 justify-between shrink-0">
+        <div className="flex items-center gap-2 font-serif font-bold text-lg text-slate-800 dark:text-slate-100">
+           <span className="w-6 h-6 bg-slate-900 text-white rounded flex items-center justify-center text-xs">N</span>
+           Nous Slate
         </div>
 
         {/* 漢堡選單 */}
@@ -108,12 +108,12 @@ export function AppLayout() {
         </Sheet>
       </header>
 
-      {/* 2. Desktop Sidebar (電腦版顯示 md:flex) */}
+      {/* Desktop Sidebar */}
       <aside className="w-64 border-r bg-white dark:bg-slate-900 hidden md:flex flex-col shrink-0 h-full">
         <NavContent />
       </aside>
 
-      {/* 3. Main Content */}
+      {/* Main Content */}
       <main className="flex-1 h-full overflow-y-auto bg-slate-50/50 dark:bg-slate-950">
         <Outlet />
       </main>
