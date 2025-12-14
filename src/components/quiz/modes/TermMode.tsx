@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { CharacterBlock } from "@/components/quiz/CharacterBlock";
 import { VirtualKeyboard } from "@/components/quiz/VirtualKeyboard";
 import { type BopomofoChar, useBopomofo } from "@/hooks/useBopomofo";
@@ -16,6 +16,28 @@ export function TermMode({ card, status, onSubmit }: TermModeProps) {
 		[],
 	);
 	const [focusedIndex, setFocusedIndex] = useState(0);
+
+	const checkAnswer = useCallback(
+		(finalInputs: BopomofoChar[]) => {
+			const blocks = card.content.blocks || [];
+			const normalize = (str: string) => (str === " " ? "" : str);
+
+			const isCorrect = finalInputs.every((input, idx) => {
+				if (!blocks[idx]) return false;
+				const target = blocks[idx].zhuyin;
+				const inputStr =
+					input.initial + input.medial + input.final + normalize(input.tone);
+				const targetStr =
+					target.initial +
+					target.medial +
+					target.final +
+					normalize(target.tone);
+				return inputStr === targetStr;
+			});
+			onSubmit(isCorrect);
+		},
+		[card, onSubmit],
+	);
 
 	// 初始化
 	useEffect(() => {
@@ -39,22 +61,6 @@ export function TermMode({ card, status, onSubmit }: TermModeProps) {
 			checkAnswer(userInputs as BopomofoChar[]);
 		}
 	}, [userInputs, status, card, checkAnswer]);
-
-	const checkAnswer = (finalInputs: BopomofoChar[]) => {
-		const blocks = card.content.blocks || [];
-		const normalize = (str: string) => (str === " " ? "" : str);
-
-		const isCorrect = finalInputs.every((input, idx) => {
-			if (!blocks[idx]) return false;
-			const target = blocks[idx].zhuyin;
-			const inputStr =
-				input.initial + input.medial + input.final + normalize(input.tone);
-			const targetStr =
-				target.initial + target.medial + target.final + normalize(target.tone);
-			return inputStr === targetStr;
-		});
-		onSubmit(isCorrect);
-	};
 
 	const {
 		displayBuffer,
