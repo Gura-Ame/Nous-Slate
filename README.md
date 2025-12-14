@@ -1,4 +1,4 @@
-# Nous Slate (格致)
+# Nous Slate
 
 > **The Tablet for the Mind.**  
 > 承載智慧的數位石板 —— 專為深度學習與間隔重複 (SRS) 打造的現代化平台。
