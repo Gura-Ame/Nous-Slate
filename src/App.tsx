@@ -1,56 +1,59 @@
+import { lazy, Suspense } from "react"; // 1. 引入 lazy
 import { HashRouter, Navigate, Route, Routes } from "react-router-dom";
-// Layouts & Pages
 import { AppLayout } from "@/components/layout/AppLayout";
+import { AuthGuard } from "@/components/layout/AuthGuard";
+import { PageLoading } from "@/components/shared/PageLoading"; // 引入 Loading
+import { PWAReloadPrompt } from "@/components/shared/PWAReloadPrompt";
 import { Toaster } from "@/components/ui/sonner";
-import Dashboard from "@/pages/Dashboard";
-import DeckEditor from "@/pages/DeckEditor";
-import Editor from "@/pages/Editor";
-import Library from "@/pages/Library";
-import Login from "@/pages/Login"; // 新增
-import Profile from "@/pages/Profile";
-import QuizSession from "@/pages/QuizSession";
-import Settings from "@/pages/Settings";
-import AdCenter from "./pages/AdCenter";
-import Privacy from "./pages/Privacy";
-import ReviewCenter from "./pages/ReviewCenter";
-import Terms from "./pages/Terms";
+
+// 2. 改用 lazy import
+const Dashboard = lazy(() => import("@/pages/Dashboard"));
+const DeckEditor = lazy(() => import("@/pages/DeckEditor"));
+const Editor = lazy(() => import("@/pages/Editor"));
+const Library = lazy(() => import("@/pages/Library"));
+const Login = lazy(() => import("@/pages/Login"));
+const Profile = lazy(() => import("@/pages/Profile"));
+const QuizSession = lazy(() => import("@/pages/QuizSession"));
+const Settings = lazy(() => import("@/pages/Settings"));
+const AdCenter = lazy(() => import("@/pages/AdCenter"));
+const ReviewCenter = lazy(() => import("@/pages/ReviewCenter"));
 
 export default function App() {
-  return (
-    <HashRouter>
-      <Routes>
-        {/* 1. 公開路由 (不需要 Sidebar) */}
-        <Route path="/login" element={<Login />} />
+	return (
+		<HashRouter>
+			<Suspense fallback={<PageLoading message="載入頁面中..." />}>
+				<Routes>
+					{/* --- 1. 公開路由 (Public Routes) --- */}
+					{/* 這些頁面不需要登入就能訪問 */}
+					<Route path="/login" element={<Login />} />
 
-        {/* 2. 受保護路由 (由 AppLayout 保護，未登入會被踢去 /login) */}
-        <Route element={<AppLayout />}>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/library" element={<Library />} />
-          <Route path="/editor" element={<Editor />} />
-          <Route path="/editor/:deckId" element={<DeckEditor />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/settings" element={<Settings />} />
-          <Route path="/ad-center" element={<AdCenter />} />
-          <Route path="/review" element={<ReviewCenter />} />
-          <Route path="/terms" element={<Terms />} />
-          <Route path="/privacy" element={<Privacy />} />
-        </Route>
+					{/* --- 2. 受保護 + 有側邊欄 (Protected + Sidebar) --- */}
+					{/* AppLayout 內部已經包含 Auth 檢查邏輯，所以這裡直接用 AppLayout */}
+					<Route element={<AppLayout />}>
+						<Route path="/" element={<Dashboard />} />
+						<Route path="/library" element={<Library />} />
+						<Route path="/editor" element={<Editor />} />
+						<Route path="/editor/:deckId" element={<DeckEditor />} />
+						<Route path="/profile" element={<Profile />} />
+						<Route path="/settings" element={<Settings />} />
+						<Route path="/ad-center" element={<AdCenter />} />
+						<Route path="/review" element={<ReviewCenter />} />
+					</Route>
 
-        {/* 3. 練習模式 (全螢幕，不需要 Sidebar，但也需要登入保護) */}
-        {/* 
-           QuizSession 比較特殊，它需要全螢幕，所以不能包在 AppLayout 裡。
-           但它又需要保護。
-           簡單解法：在 QuizSession 內部檢查 user，若無則 Navigate。
-           (我們目前的 QuizSession 已經有依賴 user.uid，如果沒 user 應該會報錯或導向)
-           為了安全，建議包一個 <ProtectedRoute> 組件，這裡先簡單處理。
-        */}
-        <Route path="/quiz/:deckId" element={<QuizSession />} />
+					{/* --- 3. 受保護 + 全螢幕 (Protected + Fullscreen) --- */}
+					{/* 這裡使用 AuthGuard 來保護路由，但不顯示 Sidebar */}
+					<Route element={<AuthGuard />}>
+						<Route path="/quiz/:deckId" element={<QuizSession />} />
+					</Route>
 
-        {/* 404 */}
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+					{/* 404 */}
+					<Route path="*" element={<Navigate to="/" replace />} />
+				</Routes>
+			</Suspense>
 
-      <Toaster richColors position="top-center" />
-    </HashRouter>
-  );
+			<Toaster richColors position="top-center" />
+
+			<PWAReloadPrompt />
+		</HashRouter>
+	);
 }
