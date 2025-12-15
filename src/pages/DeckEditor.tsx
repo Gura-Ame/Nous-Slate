@@ -114,15 +114,15 @@ export default function DeckEditor() {
 			if (!deckId) return;
 			setSaving(true);
 			try {
-				// 轉換資料結構
 				const content: CardContent = {
 					stem: data.stem,
 					meaning: data.definition,
-					audioUrl: data.audioUrl || undefined,
-					image: data.image || undefined,
+					...(data.audioUrl ? { audioUrl: data.audioUrl } : {}),
+					...(data.image ? { image: data.image } : {}),
+					...(data.maskedIndices ? { maskedIndices: data.maskedIndices } : {}),
 				};
 
-				if (data.type === "term") {
+				if (data.type === "term" || data.type === "dictation") {
 					const bopomofoList = parseBopomofoString(data.zhuyinRaw);
 					const chars = data.stem.split("");
 					content.blocks = chars.map((char, index) => ({
@@ -184,10 +184,16 @@ export default function DeckEditor() {
 			definition: content.meaning || "",
 			audioUrl: content.audioUrl || "",
 			image: content.image || "",
+			maskedIndices: content.maskedIndices || [],
 		};
 
-		if (card.type === "term") {
+		if (card.type === "term" || card.type === "dictation") {
 			formData.zhuyinRaw = reconstructZhuyin(content.blocks);
+			// 如果是舊卡片沒有 maskedIndices，預設為全空 (或全選，看需求)
+			if (!content.maskedIndices && card.type === "dictation") {
+				// 這裡選擇不預設，讓 useEffect 或使用者自己點
+				formData.maskedIndices = [];
+			}
 		} else if (card.type === "choice") {
 			formData.answer = content.answer;
 			formData.option1 = content.options?.[0] || "";

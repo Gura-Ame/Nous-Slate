@@ -94,7 +94,6 @@ export function DeckDialog({
 		e?.preventDefault();
 		const newTag = tagInput.trim();
 		if (newTag && !tags.includes(newTag)) {
-			if (tags.length >= 5) return toast.error("最多 5 個標籤");
 			setTags([...tags, newTag]);
 			setTagInput("");
 		}

@@ -1,15 +1,18 @@
-import { Folder, FolderOpen, FolderPlus, Plus } from "lucide-react";
+import { Download, Folder, FolderOpen, FolderPlus, Plus } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
-import { DeckCard } from "@/components/editor/DeckCard"; // 引入剛建立的組件
+import { DeckCard } from "@/components/editor/DeckCard"; // 確保您已建立此組件
 import { DeckDialog } from "@/components/editor/DeckDialog";
+import { FolderDialog } from "@/components/editor/FolderDialog"; // 確保您已建立此組件
 import { ImportDeckDialog } from "@/components/editor/ImportDeckDialog";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { PageLoading } from "@/components/shared/PageLoading";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-
 import { useAuth } from "@/hooks/useAuth";
+import { cn } from "@/lib/utils";
+import { DataService } from "@/services/data-service";
 import { DeckService } from "@/services/deck-service";
 import { FolderService } from "@/services/folder-service";
 import type { Deck, Folder as FolderType } from "@/types/schema";
@@ -20,9 +23,13 @@ export default function Editor() {
 	const [folders, setFolders] = useState<FolderType[]>([]);
 	const [loading, setLoading] = useState(true);
 
-	// Dialog 控制
+	// Dialogs
 	const [dialogOpen, setDialogOpen] = useState(false);
 	const [editingDeck, setEditingDeck] = useState<Deck | undefined>(undefined);
+	const [folderDialogOpen, setFolderDialogOpen] = useState(false);
+	const [editingFolder, setEditingFolder] = useState<FolderType | undefined>(
+		undefined,
+	);
 
 	// 1. 載入資料 (Deck + Folders)
 	const fetchData = useCallback(async () => {
@@ -49,35 +56,20 @@ export default function Editor() {
 
 	// --- Handlers ---
 
-	// 刪除題庫
 	const handleDeleteDeck = async (deckId: string) => {
 		if (!confirm("確定要刪除這個題庫嗎？此操作無法復原。")) return;
 		try {
 			await DeckService.deleteDeck(deckId);
 			toast.success("刪除成功");
 			fetchData();
-		} catch (_error) {
+		} catch (error) {
+			console.error(error);
 			toast.error("刪除失敗");
 		}
 	};
 
-	// 建立資料夾
-	const handleCreateFolder = async () => {
-		if (!user) return;
-		const name = prompt("請輸入資料夾名稱：");
-		if (!name || !name.trim()) return;
-
-		try {
-			await FolderService.createFolder(user.uid, name.trim());
-			toast.success("資料夾已建立");
-			fetchData();
-		} catch (_e) {
-			toast.error("建立失敗");
-		}
-	};
-
-	// 刪除資料夾
 	const handleDeleteFolder = async (folderId: string) => {
+		if (!user) return;
 		if (
 			!confirm(
 				"確定刪除資料夾？\n注意：內部的題庫不會被刪除，而是會移至「未分類」。",
@@ -85,18 +77,16 @@ export default function Editor() {
 		)
 			return;
 		try {
-			// 先將內部 Deck 移出 (Reset folderId)
-			await DeckService.resetDecksFolder(folderId);
-			// 再刪除資料夾
+			await DeckService.resetDecksFolder(user.uid, folderId);
 			await FolderService.deleteFolder(folderId);
 			toast.success("資料夾已刪除");
 			fetchData();
-		} catch (_e) {
+		} catch (e) {
+			console.error(e);
 			toast.error("刪除失敗");
 		}
 	};
 
-	// 移動題庫
 	const handleMoveDeck = async (deckId: string, folderId: string | null) => {
 		try {
 			await DeckService.moveDeckToFolder(deckId, folderId);
@@ -107,10 +97,39 @@ export default function Editor() {
 		}
 	};
 
-	// 開啟編輯/新增 Dialog
-	const openDialog = (deck?: Deck) => {
+	const openDeckDialog = (deck?: Deck) => {
 		setEditingDeck(deck);
 		setDialogOpen(true);
+	};
+
+	const openFolderDialog = (folder?: FolderType) => {
+		setEditingFolder(folder);
+		setFolderDialogOpen(true);
+	};
+
+	const handleFolderSubmit = async (data: {
+		name: string;
+		color: string;
+		isPublic: boolean;
+	}) => {
+		if (!user) return;
+		try {
+			if (editingFolder) {
+				await FolderService.updateFolder(editingFolder.id, data);
+				toast.success("資料夾已更新");
+			} else {
+				await FolderService.createFolder(
+					user.uid,
+					data.name,
+					data.color,
+					data.isPublic,
+				);
+				toast.success("資料夾已建立");
+			}
+			fetchData();
+		} catch (_e) {
+			toast.error("操作失敗");
+		}
 	};
 
 	// --- Render Helpers ---
@@ -126,12 +145,12 @@ export default function Editor() {
 	return (
 		<div className="container mx-auto p-8 space-y-10">
 			<PageHeader title="創作後台" description="管理您的題庫與資料夾分類。">
-				<div className="flex gap-2">
+				<div className="flex gap-2 flex-wrap">
 					<ImportDeckDialog onSuccess={fetchData} />
-					<Button variant="outline" onClick={handleCreateFolder}>
+					<Button variant="outline" onClick={() => openFolderDialog()}>
 						<FolderPlus className="mr-2 h-4 w-4" /> 新增資料夾
 					</Button>
-					<Button onClick={() => openDialog()}>
+					<Button onClick={() => openDeckDialog()}>
 						<Plus className="mr-2 h-4 w-4" /> 建立新題庫
 					</Button>
 				</div>
@@ -151,21 +170,63 @@ export default function Editor() {
 					return (
 						<section key={folder.id} className="space-y-4 animate-in fade-in">
 							<div className="flex items-center justify-between border-b pb-2 dark:border-slate-800">
-								<div className="flex items-center gap-2 text-slate-700 dark:text-slate-200">
-									<FolderOpen className="h-5 w-5 text-blue-500" />
-									<h3 className="text-xl font-bold">{folder.name}</h3>
-									<span className="text-sm text-muted-foreground ml-2">
-										({folderDecks.length})
-									</span>
+								<div className="flex items-center gap-3">
+									<div
+										className={cn(
+											"p-2 rounded-lg text-white shadow-sm",
+											folder.color || "bg-blue-500",
+										)}
+									>
+										<FolderOpen className="h-5 w-5" />
+									</div>
+
+									<div className="flex flex-col">
+										<div className="flex items-center gap-2">
+											<h3 className="text-xl font-bold text-slate-800 dark:text-slate-100">
+												{folder.name}
+											</h3>
+											{folder.isPublic && (
+												<Badge
+													variant="secondary"
+													className="text-[10px] bg-sky-100 text-sky-700 h-5 px-1.5"
+												>
+													公開
+												</Badge>
+											)}
+										</div>
+										<span className="text-xs text-muted-foreground">
+											{folderDecks.length} 個題庫
+										</span>
+									</div>
 								</div>
-								<Button
-									variant="ghost"
-									size="sm"
-									className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 h-8"
-									onClick={() => handleDeleteFolder(folder.id)}
-								>
-									刪除資料夾
-								</Button>
+
+								<div className="flex gap-2">
+									<Button
+										variant="ghost"
+										size="sm"
+										onClick={() =>
+											user && DataService.exportFolder(user.uid, folder)
+										}
+										title="匯出此資料夾"
+									>
+										<Download className="h-4 w-4 text-slate-500" />
+									</Button>
+									<Button
+										variant="ghost"
+										size="sm"
+										onClick={() => openFolderDialog(folder)}
+									>
+										編輯
+									</Button>
+									<Button
+										variant="ghost"
+										size="sm"
+										className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+										onClick={() => handleDeleteFolder(folder.id)}
+									>
+										刪除
+									</Button>
+								</div>
 							</div>
 
 							{folderDecks.length === 0 ? (
@@ -179,7 +240,7 @@ export default function Editor() {
 											key={deck.id}
 											deck={deck}
 											folders={folders}
-											onEdit={() => openDialog(deck)}
+											onEdit={() => openDeckDialog(deck)}
 											onDelete={() => handleDeleteDeck(deck.id)}
 											onMove={handleMoveDeck}
 										/>
@@ -193,7 +254,7 @@ export default function Editor() {
 				{/* 2. 未分類區域 */}
 				{getDecksInFolder(null).length > 0 && (
 					<section className="space-y-4 animate-in fade-in">
-						<div className="flex items-center gap-2 border-b pb-2 dark:border-slate-800">
+						<div className="flex items-center gap-2 border-b pb-2 dark:border-slate-800 mt-8">
 							<Folder className="h-5 w-5 text-slate-400" />
 							<h3 className="text-xl font-bold text-slate-600 dark:text-slate-300">
 								未分類題庫
@@ -208,7 +269,7 @@ export default function Editor() {
 									key={deck.id}
 									deck={deck}
 									folders={folders}
-									onEdit={() => openDialog(deck)}
+									onEdit={() => openDeckDialog(deck)}
 									onDelete={() => handleDeleteDeck(deck.id)}
 									onMove={handleMoveDeck}
 								/>
@@ -224,6 +285,13 @@ export default function Editor() {
 				onOpenChange={setDialogOpen}
 				deck={editingDeck}
 				onSuccess={fetchData}
+			/>
+
+			<FolderDialog
+				open={folderDialogOpen}
+				onOpenChange={setFolderDialogOpen}
+				folder={editingFolder}
+				onSubmit={handleFolderSubmit}
 			/>
 		</div>
 	);

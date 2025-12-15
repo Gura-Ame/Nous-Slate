@@ -1,6 +1,6 @@
 import { Volume2 } from "lucide-react";
-// 引入我們寫好的各個模式
 import { ChoiceMode } from "@/components/quiz/modes/ChoiceMode";
+import { DictationMode } from "@/components/quiz/modes/DictationMode";
 import { FillMode } from "@/components/quiz/modes/FillMode";
 import { FlashcardMode } from "@/components/quiz/modes/FlashcardMode";
 import { TermMode } from "@/components/quiz/modes/TermMode";
@@ -16,13 +16,17 @@ interface QuizAreaProps {
 }
 
 export function QuizArea({ card, status, onAnswer }: QuizAreaProps) {
-	// 1. 渲染題目區塊 (Flashcard/Fill 模式不顯示，因為它們內建了)
 	const renderQuestionHeader = () => {
-		if (card.type === "flashcard" || card.type === "fill_blank") return null;
+		// Dictation 模式也不顯示標題 (因為標題就是注音方塊本身)
+		if (
+			card.type === "flashcard" ||
+			card.type === "fill_blank" ||
+			card.type === "dictation" // 新增 dictation
+		)
+			return null;
 
 		return (
 			<div className="text-center space-y-6 flex flex-col items-center max-w-3xl w-full mb-8">
-				{/* 圖片 */}
 				{card.content.image && (
 					<div className="relative mb-4 rounded-lg overflow-hidden border bg-white dark:bg-slate-900 shadow-sm">
 						<img
@@ -33,10 +37,9 @@ export function QuizArea({ card, status, onAnswer }: QuizAreaProps) {
 					</div>
 				)}
 
-				{/* 題目與發音 */}
 				<button
 					type="button"
-					className="relative group cursor-pointer bg-transparent border-none p-0" // 可能需要重置預設樣式
+					className="relative group cursor-pointer bg-transparent border-none p-0"
 					onClick={() => speak(card.content.stem)}
 				>
 					<h2 className="text-5xl font-serif font-bold text-slate-800 dark:text-slate-100 leading-tight">
@@ -47,7 +50,6 @@ export function QuizArea({ card, status, onAnswer }: QuizAreaProps) {
 					</div>
 				</button>
 
-				{/* 解釋 (非作答時顯示) */}
 				<p className="text-lg text-slate-500 max-w-lg mx-auto min-h-7">
 					{status !== "question" && card.content.meaning}
 				</p>
@@ -59,8 +61,6 @@ export function QuizArea({ card, status, onAnswer }: QuizAreaProps) {
 		<>
 			{renderQuestionHeader()}
 
-			{/* 2. 根據題型渲染對應組件 */}
-			{/* 加上 key 確保切換題目時強制重新渲染 (解決殘留問題) */}
 			{card.type === "term" && (
 				<TermMode
 					key={card.id}
@@ -69,6 +69,16 @@ export function QuizArea({ card, status, onAnswer }: QuizAreaProps) {
 					onSubmit={(res) => onAnswer(res)}
 				/>
 			)}
+
+			{card.type === "dictation" && (
+				<DictationMode
+					key={card.id}
+					card={card}
+					status={status}
+					onSubmit={(isCorrect) => onAnswer(isCorrect, isCorrect ? 5 : 1)}
+				/>
+			)}
+
 			{card.type === "choice" && (
 				<ChoiceMode
 					key={card.id}

@@ -5,6 +5,8 @@ export interface Folder {
 	ownerId: string;
 	name: string;
 	createdAt: Timestamp;
+	color?: string; // 儲存 Tailwind class，例如 "bg-red-500"
+	isPublic: boolean; // 是否公開
 }
 
 // 1. 卡片類型 (Card)
@@ -40,6 +42,7 @@ export interface CardContent {
 	answer?: string;
 
 	options?: string[]; // 干擾項 (選擇題用)
+	maskedIndices?: number[];
 }
 
 export interface Card {

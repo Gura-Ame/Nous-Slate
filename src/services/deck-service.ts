@@ -142,12 +142,22 @@ export const DeckService = {
 		});
 	},
 
-	// 新增：當資料夾被刪除時，把裡面的題庫移出來 (重置為 null)
-	resetDecksFolder: async (folderId: string) => {
-		const q = query(collection(db, "decks"), where("folderId", "==", folderId));
+	resetDecksFolder: async (userId: string, folderId: string) => {
+		const q = query(
+			collection(db, COLLECTION_NAME),
+			where("folderId", "==", folderId),
+			where("ownerId", "==", userId), // 關鍵：必須加上這行，才能通過安全規則
+		);
 		const snap = await getDocs(q);
 
-		const updates = snap.docs.map((d) => updateDoc(d.ref, { folderId: null }));
-		await Promise.all(updates);
+		// 使用 Batch 寫入，效能更好且原子化
+		const batch = writeBatch(db);
+		snap.docs.forEach((doc) => {
+			batch.update(doc.ref, {
+				folderId: null,
+				updatedAt: serverTimestamp(),
+			});
+		});
+		await batch.commit();
 	},
 };

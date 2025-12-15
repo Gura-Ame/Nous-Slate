@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { toast } from "sonner"; // 引入 toast
 import { CharacterBlock } from "@/components/quiz/CharacterBlock";
 import { VirtualKeyboard } from "@/components/quiz/VirtualKeyboard";
 import { type BopomofoChar, useBopomofo } from "@/hooks/useBopomofo";
@@ -16,6 +17,42 @@ export function TermMode({ card, status, onSubmit }: TermModeProps) {
 		[],
 	);
 	const [focusedIndex, setFocusedIndex] = useState(0);
+
+	const lastCardIdRef = useRef(card.id);
+
+	// 1. 初始化與重置邏輯
+	if (card.id !== lastCardIdRef.current) {
+		lastCardIdRef.current = card.id;
+		setUserInputs([]);
+		setFocusedIndex(0);
+	}
+
+	// 2. 聚焦邏輯
+	useEffect(() => {
+		if (status === "question") {
+			const timer = setTimeout(() => {
+				inputRef.current?.focus();
+			}, 100);
+			return () => clearTimeout(timer);
+		}
+	}, [status]);
+
+	const handleCompositionStart = () => {
+		// 1. 跳出警告
+		toast.warning("請切換至英文模式", {
+			description: "本系統內建注音引擎，請關閉您的系統輸入法以正常打字。",
+			duration: 3000,
+		});
+
+		// 2. 強制中斷 IME 狀態
+		// 原理：讓 input 失去焦點再重新聚焦，會強制瀏覽器關閉正在開啟的選字視窗
+		if (inputRef.current) {
+			inputRef.current.blur();
+			setTimeout(() => {
+				inputRef.current?.focus();
+			}, 50);
+		}
+	};
 
 	const checkAnswer = useCallback(
 		(finalInputs: BopomofoChar[]) => {
@@ -39,21 +76,9 @@ export function TermMode({ card, status, onSubmit }: TermModeProps) {
 		[card, onSubmit],
 	);
 
-	// 初始化
-	useEffect(() => {
-		setUserInputs([]);
-		setFocusedIndex(0);
-		if (status === "question") {
-			setTimeout(() => inputRef.current?.focus(), 50);
-		}
-	}, [status]);
-
-	// 檢查答案
 	useEffect(() => {
 		const blocks = card.content.blocks || [];
 		const targetLength = blocks.length;
-
-		// 檢查是否填滿 (無 undefined)
 		const isFilled =
 			userInputs.length === targetLength && !userInputs.includes(undefined);
 
@@ -70,35 +95,26 @@ export function TermMode({ card, status, onSubmit }: TermModeProps) {
 		resetBuffer,
 		setInternalBuffer,
 	} = useBopomofo(
-		// onCommit
 		(newChar) => {
 			if (status !== "question") return;
-
 			setUserInputs((prev) => {
 				const newArr = [...prev];
-				// 更新當前這一格
 				newArr[focusedIndex] = newChar;
 				return newArr;
 			});
-
-			// 自動跳下一格
-			handleNextFocus();
+			const targetLength = card.content.blocks?.length || 0;
+			if (focusedIndex < targetLength - 1) {
+				setFocusedIndex((prev) => prev + 1);
+			}
 		},
-		// onBackspaceEmpty (回退邏輯)
 		() => {
 			if (status !== "question") return;
 			if (focusedIndex > 0) {
 				const prevIndex = focusedIndex - 1;
-				const prevChar = userInputs[prevIndex];
-
-				// 1. 移動焦點
 				setFocusedIndex(prevIndex);
-
-				// 2. 如果上一格有字，把它載入 Buffer 供修改
+				const prevChar = userInputs[prevIndex];
 				if (prevChar) {
 					setInternalBuffer(prevChar);
-
-					// 3. 視覺上清空這一格 (變成 Active 狀態)
 					setUserInputs((prev) => {
 						const newArr = [...prev];
 						newArr[prevIndex] = undefined;
@@ -109,59 +125,37 @@ export function TermMode({ card, status, onSubmit }: TermModeProps) {
 		},
 	);
 
-	const handleNextFocus = () => {
-		const targetLength = card.content.blocks?.length || 0;
-		if (focusedIndex < targetLength - 1) {
-			const nextIndex = focusedIndex + 1;
-			setFocusedIndex(nextIndex);
-
-			// 關鍵：如果下一格已經有字了 (例如之前打過)，
-			// 我們不載入 Buffer，而是保持它顯示在格子裡 (Filled 狀態)，
-			// 直到使用者按下了任何一個鍵，CharacterBlock 的邏輯會自動切換顯示。
-			// 這裡不需要做額外動作，只要不設 undefined，它就不會消失。
-		}
-	};
-
-	// 處理點擊格子
 	const handleBlockClick = (index: number) => {
 		if (status !== "question") return;
-
-		// 1. 先把當前 Buffer 清空 (放棄輸入到一半的)
 		resetBuffer();
-
-		// 2. 設定新焦點
 		setFocusedIndex(index);
-
-		// 3. 如果點擊的這格已經有字，把它載入 Buffer 供修改
 		const existingChar = userInputs[index];
 		if (existingChar) {
 			setInternalBuffer(existingChar);
-
-			// 4. 清空這格的已確認狀態
 			setUserInputs((prev) => {
 				const newArr = [...prev];
 				newArr[index] = undefined;
 				return newArr;
 			});
 		}
-
 		inputRef.current?.focus();
 	};
 
 	const blocks = card.content.blocks || [];
 
 	return (
-		// biome-ignore lint/a11y/useKeyWithClickEvents: 僅為 UX 優化
-		// biome-ignore lint/a11y/noStaticElementInteractions: 點擊背景聚焦
+		// biome-ignore lint/a11y/useKeyWithClickEvents: 背景點擊僅為 UX 優化
+		// biome-ignore lint/a11y/noStaticElementInteractions: 背景點擊僅為 UX 優化
 		<div
 			className="flex flex-col items-center w-full outline-none"
-			onClick={() => status === "question" && inputRef.current?.focus()}
+			onClick={() => {
+				if (status === "question") inputRef.current?.focus();
+			}}
 		>
 			<div className="flex flex-wrap justify-center gap-4">
 				{blocks.map((block, index) => {
 					const inputChar = userInputs[index];
 					const isFocused = index === focusedIndex;
-
 					let displayBopomofo: BopomofoChar | string | undefined;
 					let blockStatus:
 						| "default"
@@ -175,24 +169,12 @@ export function TermMode({ card, status, onSubmit }: TermModeProps) {
 						blockStatus = "correct";
 					} else if (status === "failure") {
 						displayBopomofo = inputChar;
-						const normalize = (s: string) => (s === " " ? "" : s);
-						const target = block.zhuyin;
-						const iTone = normalize(inputChar?.tone || "");
-						const tTone = normalize(target.tone);
-						const iStr =
-							(inputChar?.initial || "") +
-							(inputChar?.medial || "") +
-							(inputChar?.final || "") +
-							iTone;
-						const tStr = target.initial + target.medial + target.final + tTone;
-						blockStatus = iStr === tStr ? "correct" : "error";
+						blockStatus = "error";
 					} else {
 						if (isFocused) {
-							// 焦點格：顯示 Buffer
 							displayBopomofo = displayBuffer;
 							blockStatus = "active";
 						} else {
-							// 非焦點：顯示已輸入
 							displayBopomofo = inputChar;
 							blockStatus = inputChar ? "filled" : "default";
 						}
@@ -206,7 +188,7 @@ export function TermMode({ card, status, onSubmit }: TermModeProps) {
 								e.stopPropagation();
 								handleBlockClick(index);
 							}}
-							className="cursor-pointer outline-none focus:ring-2 focus:ring-primary rounded bg-transparent border-0 p-0"
+							className="focus:outline-none focus:ring-2 focus:ring-primary rounded-lg"
 						>
 							<CharacterBlock
 								char={block.char}
@@ -223,6 +205,12 @@ export function TermMode({ card, status, onSubmit }: TermModeProps) {
 				type="url"
 				className="opacity-0 absolute w-0 h-0 pointer-events-none"
 				onKeyDown={handleKeyDown}
+				onCompositionStart={handleCompositionStart}
+				autoCorrect="off"
+				autoCapitalize="off"
+				spellCheck="false"
+				// biome-ignore lint/a11y/noAutofocus: 遊戲體驗核心需求
+				autoFocus
 				autoComplete="off"
 				disabled={status !== "question"}
 			/>

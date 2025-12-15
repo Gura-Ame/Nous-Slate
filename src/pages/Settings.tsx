@@ -1,5 +1,6 @@
 import { Monitor, Moon, Sun } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { DataManagement } from "@/components/settings/DataManagement";
 import { useTheme } from "@/components/theme-provider";
 import { Button } from "@/components/ui/button";
 import {
@@ -68,30 +69,6 @@ export default function Settings() {
 					<CardDescription>調整練習時的行為。</CardDescription>
 				</CardHeader>
 				<CardContent className="space-y-6">
-					<div className="flex items-center justify-between">
-						<div className="space-y-0.5">
-							<Label>自動播放發音</Label>
-							<p className="text-sm text-slate-500">進入題目時自動朗讀</p>
-						</div>
-						<Switch disabled checked={false} />
-					</div>
-					<div className="flex items-center justify-between">
-						<div className="space-y-0.5">
-							<Label>音效回饋</Label>
-							<p className="text-sm text-slate-500">答對/答錯時播放音效</p>
-						</div>
-						<Switch defaultChecked />
-					</div>
-				</CardContent>
-			</Card>
-
-			{/* 學習設定 */}
-			<Card>
-				<CardHeader>
-					<CardTitle>學習偏好</CardTitle>
-					<CardDescription>調整練習時的行為。</CardDescription>
-				</CardHeader>
-				<CardContent className="space-y-6">
 					{/* 自動播放發音 */}
 					<div className="flex items-center justify-between">
 						<div className="space-y-0.5">
@@ -118,6 +95,8 @@ export default function Settings() {
 					</div>
 				</CardContent>
 			</Card>
+
+			<DataManagement />
 		</div>
 	);
 }
