@@ -22,7 +22,6 @@ import {
 	CardTitle,
 } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-// ▼▼▼ 引入 Chevron 圖示 ▼▼▼
 import { useAuth } from "@/hooks/useAuth";
 import {
 	type ChartDataPoint,
@@ -34,7 +33,6 @@ export default function Dashboard() {
 	const { user } = useAuth();
 	const [stats, setStats] = useState<DashboardStats | null>(null);
 
-	// ▼▼▼ 新增：圖表專用狀態 ▼▼▼
 	const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
 	const [chartDate, setChartDate] = useState(new Date()); // 當前檢視的結束日期
 	const [loading, setLoading] = useState(true);
@@ -114,7 +112,6 @@ export default function Dashboard() {
 										<CardDescription>複習數量與錯誤率趨勢。</CardDescription>
 									</div>
 
-									{/* ▼▼▼ 日期控制器 ▼▼▼ */}
 									<div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 rounded-md p-1">
 										<Button
 											variant="ghost"
@@ -137,7 +134,6 @@ export default function Dashboard() {
 											<ChevronRight className="h-4 w-4" />
 										</Button>
 									</div>
-									{/* ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲ */}
 								</div>
 							</CardHeader>
 							<CardContent className="pl-0">

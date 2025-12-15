@@ -105,12 +105,12 @@ export const KEY_MAP: Record<string, string> = {
 
 // 輔助函式：判斷是否為聲調
 export const isToneSymbol = (char: string) =>
-	TONE_SYMBOLS.includes(char as any);
+	(TONE_SYMBOLS as readonly string[]).includes(char);
 
 // 輔助函式：判斷注音類型
 export const getZhuyinType = (char: string) => {
-	if (INITIALS.includes(char as any)) return "initial";
-	if (MEDIALS.includes(char as any)) return "medial";
-	if (FINALS.includes(char as any)) return "final";
+	if ((INITIALS as readonly string[]).includes(char)) return "initial";
+	if ((MEDIALS as readonly string[]).includes(char)) return "medial";
+	if ((FINALS as readonly string[]).includes(char)) return "final";
 	return "unknown";
 };

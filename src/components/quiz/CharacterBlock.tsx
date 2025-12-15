@@ -98,6 +98,7 @@ export function CharacterBlock({
 					<div className="flex flex-col items-center justify-center leading-none">
 						{symbols.split("").map((s, i) => (
 							<div
+								// biome-ignore lint/suspicious/noArrayIndexKey: 字元拆解顯示順序固定
 								key={i}
 								className={cn(
 									"text-xl font-serif text-slate-600 dark:text-slate-300 font-medium flex items-center justify-center",

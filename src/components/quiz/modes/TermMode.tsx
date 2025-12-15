@@ -109,7 +109,6 @@ export function TermMode({ card, status, onSubmit }: TermModeProps) {
 		},
 	);
 
-	// ▼▼▼ 修正：跳下一格時，只移動焦點，不動 userInputs ▼▼▼
 	const handleNextFocus = () => {
 		const targetLength = card.content.blocks?.length || 0;
 		if (focusedIndex < targetLength - 1) {
@@ -152,6 +151,8 @@ export function TermMode({ card, status, onSubmit }: TermModeProps) {
 	const blocks = card.content.blocks || [];
 
 	return (
+		// biome-ignore lint/a11y/useKeyWithClickEvents: 僅為 UX 優化
+		// biome-ignore lint/a11y/noStaticElementInteractions: 點擊背景聚焦
 		<div
 			className="flex flex-col items-center w-full outline-none"
 			onClick={() => status === "question" && inputRef.current?.focus()}
@@ -198,19 +199,21 @@ export function TermMode({ card, status, onSubmit }: TermModeProps) {
 					}
 
 					return (
-						<div
+						<button
+							type="button"
 							key={`${card.id}-${index}`}
 							onClick={(e) => {
 								e.stopPropagation();
 								handleBlockClick(index);
 							}}
+							className="cursor-pointer outline-none focus:ring-2 focus:ring-primary rounded bg-transparent border-0 p-0"
 						>
 							<CharacterBlock
 								char={block.char}
 								bopomofo={displayBopomofo}
 								status={blockStatus}
 							/>
-						</div>
+						</button>
 					);
 				})}
 			</div>
@@ -220,7 +223,6 @@ export function TermMode({ card, status, onSubmit }: TermModeProps) {
 				type="url"
 				className="opacity-0 absolute w-0 h-0 pointer-events-none"
 				onKeyDown={handleKeyDown}
-				autoFocus
 				autoComplete="off"
 				disabled={status !== "question"}
 			/>

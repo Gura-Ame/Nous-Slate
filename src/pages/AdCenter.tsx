@@ -1,5 +1,5 @@
 import { Coins, Heart, Target, Tv } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -28,18 +28,18 @@ export default function AdCenter() {
 	const [adBid, setAdBid] = useState(10);
 	const [adTags, setAdTags] = useState("");
 
-	const refreshData = async () => {
+	const refreshData = useCallback(async () => {
 		if (user) {
 			const p = await PointsService.getUserProfile(user.uid);
 			setProfile(p);
 			const recommended = await AdService.getRecommendedAds(user.uid);
 			setAds(recommended);
 		}
-	};
+	}, [user]);
 
 	useEffect(() => {
 		refreshData();
-	}, [user]);
+	}, [refreshData]);
 
 	// 觀看廣告
 	const handleWatch = async (ad: Ad) => {

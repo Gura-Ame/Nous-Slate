@@ -89,6 +89,7 @@ export default function QuizSession() {
 		<div
 			ref={containerRef}
 			className="h-screen flex flex-col bg-slate-50 dark:bg-slate-950 cursor-default outline-none"
+			// biome-ignore lint/a11y/noNoninteractiveTabindex: 需要捕獲全域鍵盤事件
 			tabIndex={0}
 		>
 			<QuizHeader

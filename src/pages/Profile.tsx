@@ -40,7 +40,6 @@ export default function Profile() {
 			} catch (error) {
 				console.error("Profile data fetch error:", error);
 			} finally {
-				// ▼▼▼ 無論成功失敗，最後關閉 loading ▼▼▼
 				setLoading(false);
 			}
 		};
@@ -83,7 +82,6 @@ export default function Profile() {
 					<p className="text-slate-500">{user.email}</p>
 
 					<div className="flex items-center justify-center md:justify-start gap-3 pt-2 flex-wrap">
-						{/* ▼▼▼ 3. 修改這裡：顯示積分 ▼▼▼ */}
 						<div className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
 							<Coins className="w-4 h-4 mr-1.5" />
 							{userProfile?.points?.toFixed(1) || 0} 積分

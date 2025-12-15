@@ -4,10 +4,13 @@ import { ThemeProvider } from "@/components/theme-provider";
 import App from "./App.tsx";
 import "./index.css";
 
-ReactDOM.createRoot(document.getElementById("root")!).render(
-	<React.StrictMode>
-		<ThemeProvider defaultTheme="system" storageKey="nous-theme">
-			<App />
-		</ThemeProvider>
-	</React.StrictMode>,
-);
+const root: HTMLElement | null = document.getElementById("root");
+if (root) {
+	ReactDOM.createRoot(root).render(
+		<React.StrictMode>
+			<ThemeProvider defaultTheme="system" storageKey="nous-theme">
+				<App />
+			</ThemeProvider>
+		</React.StrictMode>,
+	);
+}

@@ -36,7 +36,8 @@ export function CardPreview({
 						const zhuyinStr = bopomofos[index] || "";
 						return (
 							<CharacterBlock
-								key={index}
+								// biome-ignore lint/suspicious/noArrayIndexKey: 預覽文字順序固定
+								key={`${char}-${index}`}
 								char={char}
 								bopomofo={zhuyinStr}
 								status="default"

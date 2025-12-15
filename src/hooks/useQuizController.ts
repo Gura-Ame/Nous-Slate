@@ -108,7 +108,7 @@ export function useQuizController() {
 					"quiz_cost",
 					"練習扣點",
 				);
-			} catch (e) {
+			} catch (_e) {
 				toast.error("積分不足！請前往積分中心");
 				navigate("/ad-center");
 				return;

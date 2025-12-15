@@ -3,7 +3,6 @@
 import {
 	addDoc,
 	collection,
-	deleteDoc,
 	doc,
 	getDocs,
 	orderBy,
@@ -11,6 +10,7 @@ import {
 	serverTimestamp,
 	updateDoc,
 	where,
+	writeBatch,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import type { Deck } from "@/types/schema";
@@ -63,11 +63,38 @@ export const DeckService = {
 		}
 	},
 
-	// 3. 刪除題庫
 	deleteDeck: async (deckId: string) => {
 		try {
-			await deleteDoc(doc(db, COLLECTION_NAME, deckId));
-			// TODO: 這裡之後應該要用 Batch Delete 把該題庫底下的 Cards 也刪掉
+			const batch = writeBatch(db);
+
+			// 1. 刪除該 Deck
+			const deckRef = doc(db, COLLECTION_NAME, deckId);
+			batch.delete(deckRef);
+
+			// 2. 找出所有關聯的 Cards 並加入刪除排程
+			const cardsQuery = query(
+				collection(db, "cards"),
+				where("deckId", "==", deckId),
+			);
+			const cardsSnapshot = await getDocs(cardsQuery);
+			cardsSnapshot.forEach((doc) => {
+				batch.delete(doc.ref);
+			});
+
+			// 3. 找出所有關聯的 Reviews 並加入刪除排程
+			const reviewsQuery = query(
+				collection(db, "reviews"),
+				where("deckId", "==", deckId),
+			);
+			const reviewsSnapshot = await getDocs(reviewsQuery);
+			reviewsSnapshot.forEach((doc) => {
+				batch.delete(doc.ref);
+			});
+
+			// 4. 一次提交所有刪除操作 (注意：若總數超過 500 筆會報錯，需進階處理分批)
+			await batch.commit();
+
+			console.log(`Deck ${deckId} and related data deleted successfully.`);
 		} catch (error) {
 			console.error("Error deleting deck:", error);
 			throw error;
@@ -106,5 +133,21 @@ export const DeckService = {
 			console.error("Error updating deck:", error);
 			throw error;
 		}
+	},
+
+	moveDeckToFolder: async (deckId: string, folderId: string | null) => {
+		const deckRef = doc(db, "decks", deckId);
+		await updateDoc(deckRef, {
+			folderId: folderId, // null 代表移出資料夾 (變成未分類)
+		});
+	},
+
+	// 新增：當資料夾被刪除時，把裡面的題庫移出來 (重置為 null)
+	resetDecksFolder: async (folderId: string) => {
+		const q = query(collection(db, "decks"), where("folderId", "==", folderId));
+		const snap = await getDocs(q);
+
+		const updates = snap.docs.map((d) => updateDoc(d.ref, { folderId: null }));
+		await Promise.all(updates);
 	},
 };

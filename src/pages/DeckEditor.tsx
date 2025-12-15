@@ -1,5 +1,5 @@
 // src/pages/DeckEditor.tsx
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useParams } from "react-router-dom";
 import { toast } from "sonner";
@@ -18,7 +18,7 @@ import { type MoedictHeteronym, useMoedict } from "@/hooks/useMoedict";
 import { parseBopomofoString, parseOneBopomofo } from "@/lib/bopomofo-utils";
 import { reconstructZhuyin } from "@/lib/editor-utils";
 import { CardService } from "@/services/card-service";
-import type { Card as CardType } from "@/types/schema";
+import type { CardContent, Card as CardType } from "@/types/schema";
 
 export default function DeckEditor() {
 	const { deckId } = useParams<{ deckId: string }>();
@@ -52,7 +52,7 @@ export default function DeckEditor() {
 	});
 
 	// Load Data
-	const fetchCards = async () => {
+	const fetchCards = useCallback(async () => {
 		if (!deckId) return;
 		try {
 			const data = await CardService.getCardsByDeck(deckId);
@@ -62,11 +62,11 @@ export default function DeckEditor() {
 		} finally {
 			setLoading(false);
 		}
-	};
+	}, [deckId]);
 
 	useEffect(() => {
 		fetchCards();
-	}, [deckId]);
+	}, [fetchCards]);
 
 	// Handlers
 	const handleAutoFillMoedict = async () => {
@@ -109,61 +109,64 @@ export default function DeckEditor() {
 		}
 	};
 
-	const handleSubmit = async (data: DeckEditorFormData) => {
-		if (!deckId) return;
-		setSaving(true);
-		try {
-			// 轉換資料結構
-			const content: any = {
-				stem: data.stem,
-				meaning: data.definition,
-				audioUrl: data.audioUrl || undefined,
-				image: data.image || undefined,
-			};
+	const handleSubmit = useCallback(
+		async (data: DeckEditorFormData) => {
+			if (!deckId) return;
+			setSaving(true);
+			try {
+				// 轉換資料結構
+				const content: CardContent = {
+					stem: data.stem,
+					meaning: data.definition,
+					audioUrl: data.audioUrl || undefined,
+					image: data.image || undefined,
+				};
 
-			if (data.type === "term") {
-				const bopomofoList = parseBopomofoString(data.zhuyinRaw);
-				const chars = data.stem.split("");
-				content.blocks = chars.map((char, index) => ({
-					char,
-					zhuyin: bopomofoList[index] || parseOneBopomofo(""),
-				}));
-			} else if (data.type === "choice") {
-				content.answer = data.answer;
-				content.options = [data.option1, data.option2, data.option3].filter(
-					Boolean,
-				);
-			} else if (data.type === "fill_blank") {
-				content.answer = data.answer;
+				if (data.type === "term") {
+					const bopomofoList = parseBopomofoString(data.zhuyinRaw);
+					const chars = data.stem.split("");
+					content.blocks = chars.map((char, index) => ({
+						char,
+						zhuyin: bopomofoList[index] || parseOneBopomofo(""),
+					}));
+				} else if (data.type === "choice") {
+					content.answer = data.answer;
+					content.options = [data.option1, data.option2, data.option3].filter(
+						Boolean,
+					);
+				} else if (data.type === "fill_blank") {
+					content.answer = data.answer;
+				}
+
+				if (editingCardId) {
+					await CardService.updateCard(editingCardId, content);
+					toast.success("更新成功");
+					setEditingCardId(null);
+				} else {
+					await CardService.createCard(deckId, data.type, content);
+					toast.success("新增成功");
+				}
+
+				form.reset({
+					type: data.type,
+					stem: "",
+					zhuyinRaw: "",
+					definition: "",
+					audioUrl: "",
+					answer: "",
+					option1: "",
+					option2: "",
+					option3: "",
+				});
+				fetchCards();
+			} catch {
+				toast.error("儲存失敗");
+			} finally {
+				setSaving(false);
 			}
-
-			if (editingCardId) {
-				await CardService.updateCard(editingCardId, content);
-				toast.success("更新成功");
-				setEditingCardId(null);
-			} else {
-				await CardService.createCard(deckId, data.type, content);
-				toast.success("新增成功");
-			}
-
-			form.reset({
-				type: data.type,
-				stem: "",
-				zhuyinRaw: "",
-				definition: "",
-				audioUrl: "",
-				answer: "",
-				option1: "",
-				option2: "",
-				option3: "",
-			});
-			fetchCards();
-		} catch {
-			toast.error("儲存失敗");
-		} finally {
-			setSaving(false);
-		}
-	};
+		},
+		[deckId, fetchCards, editingCardId, form.reset],
+	);
 
 	const handleDelete = async (cardId: string) => {
 		if (!confirm("確定刪除？")) return;

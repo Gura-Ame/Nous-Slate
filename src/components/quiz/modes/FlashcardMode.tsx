@@ -19,7 +19,6 @@ export function FlashcardMode({ card, status, onRate }: FlashcardModeProps) {
 	useEffect(() => {
 		setIsFlipped(false);
 
-		// ▼▼▼ 自動播放邏輯 ▼▼▼
 		if (status === "question" && autoPlayAudio) {
 			// 稍微延遲一點點，體驗比較好
 			const timer = setTimeout(() => {
@@ -60,6 +59,7 @@ export function FlashcardMode({ card, status, onRate }: FlashcardModeProps) {
 	return (
 		// 修改：h-[400px] 改為 h-[50vh] max-h-[500px]，確保在各種螢幕都大致居中
 		<div className="w-full max-w-md perspective-1000 h-[50vh] max-h-[500px] flex flex-col justify-center">
+			{/* biome-ignore lint: This element is a complex flip card container, and its button behavior is manually handled for specific styling needs. */}
 			<div
 				className={cn(
 					"relative w-full h-full transition-transform duration-500 transform-style-3d cursor-pointer",

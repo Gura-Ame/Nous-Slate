@@ -121,6 +121,7 @@ export default function Library() {
 			<div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
 				{loading ? (
 					Array.from({ length: 8 }).map((_vaule, id) => (
+						// biome-ignore lint/suspicious/noArrayIndexKey: Skeleton 列表
 						<Skeleton key={id} className="h-60 w-full rounded-xl" />
 					))
 				) : filteredDecks.length === 0 ? (

@@ -38,6 +38,7 @@ export function PolyphoneSelectDialog({
 					<div className="space-y-2">
 						{candidates.map((item, index) => (
 							<Button
+								// biome-ignore lint/suspicious/noArrayIndexKey: 選項列表順序固定
 								key={index}
 								variant="outline"
 								className="w-full h-auto flex flex-col items-start p-4 text-left justify-start whitespace-normal"

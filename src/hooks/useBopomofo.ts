@@ -22,14 +22,17 @@ export function useBopomofo(
 	const [buffer, setBuffer] = useState<BopomofoChar>(EMPTY_CHAR);
 	const bufferRef = useRef<BopomofoChar>(EMPTY_CHAR);
 
-	const updateState = (newBuffer: BopomofoChar) => {
+	const updateState = useCallback((newBuffer: BopomofoChar) => {
 		bufferRef.current = newBuffer;
 		setBuffer(newBuffer);
-	};
-
-	const setInternalBuffer = useCallback((char: BopomofoChar) => {
-		updateState(char);
 	}, []);
+
+	const setInternalBuffer = useCallback(
+		(char: BopomofoChar) => {
+			updateState(char);
+		},
+		[updateState],
+	);
 
 	const processInput = useCallback(
 		(charOrTone: string) => {
@@ -53,7 +56,7 @@ export function useBopomofo(
 				updateState(nextBuffer);
 			}
 		},
-		[onCommit],
+		[onCommit, updateState],
 	);
 
 	const processBackspace = useCallback(() => {
@@ -76,7 +79,7 @@ export function useBopomofo(
 		else if (current.initial) nextBuffer.initial = "";
 
 		updateState(nextBuffer);
-	}, [onBackspaceEmpty]);
+	}, [onBackspaceEmpty, updateState]);
 
 	const handleKeyDown = useCallback(
 		(e: React.KeyboardEvent) => {

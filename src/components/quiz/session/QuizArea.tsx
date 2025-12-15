@@ -34,17 +34,10 @@ export function QuizArea({ card, status, onAnswer }: QuizAreaProps) {
 				)}
 
 				{/* 題目與發音 */}
-				<div
-					className="relative group cursor-pointer"
-					role="button"
-					tabIndex={0}
+				<button
+					type="button"
+					className="relative group cursor-pointer bg-transparent border-none p-0" // 可能需要重置預設樣式
 					onClick={() => speak(card.content.stem)}
-					onKeyDown={(e) => {
-						if (e.key === "Enter" || e.key === " ") {
-							e.preventDefault();
-							speak(card.content.stem);
-						}
-					}}
 				>
 					<h2 className="text-5xl font-serif font-bold text-slate-800 dark:text-slate-100 leading-tight">
 						{card.content.stem}
@@ -52,7 +45,7 @@ export function QuizArea({ card, status, onAnswer }: QuizAreaProps) {
 					<div className="absolute -right-8 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
 						<Volume2 className="h-5 w-5 text-slate-400" />
 					</div>
-				</div>
+				</button>
 
 				{/* 解釋 (非作答時顯示) */}
 				<p className="text-lg text-slate-500 max-w-lg mx-auto min-h-7">

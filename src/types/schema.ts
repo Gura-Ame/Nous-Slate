@@ -1,5 +1,12 @@
 import type { Timestamp } from "firebase/firestore";
 
+export interface Folder {
+	id: string;
+	ownerId: string;
+	name: string;
+	createdAt: Timestamp;
+}
+
 // 1. 卡片類型 (Card)
 export type CardType =
 	| "char"
@@ -59,6 +66,8 @@ export interface Deck {
 	description?: string;
 	tags: string[];
 
+	folderId?: string | null;
+
 	isPublic: boolean;
 	forkedFrom?: string;
 
@@ -99,7 +108,6 @@ export interface UserProfile {
 	photoURL?: string;
 	email?: string;
 
-	// ▼▼▼ 新增積分相關 ▼▼▼
 	points: number; // 目前積分
 	lastDailyBonus: Timestamp | null; // 上次領取每日獎勵的時間
 	interestTags: string[]; // 用於廣告推薦的興趣標籤 (根據做過的題庫累積)

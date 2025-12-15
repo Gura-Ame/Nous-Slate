@@ -39,6 +39,7 @@ export function VirtualKeyboard({
 		>
 			<div className="max-w-5xl mx-auto flex flex-col gap-1.5 p-1">
 				{ROWS.map((row, rowIndex) => (
+					// biome-ignore lint/suspicious/noArrayIndexKey: 鍵盤佈局固定
 					<div key={rowIndex} className="flex justify-center gap-1 w-full">
 						{/* Row 4 左側裝飾 Shift */}
 						{rowIndex === 3 && (

@@ -58,6 +58,7 @@ export function ChoiceMode({ card, status, onSubmit }: ChoiceModeProps) {
 					}
 					return (
 						<Button
+							// biome-ignore lint/suspicious/noArrayIndexKey: 選項內容可能重複，必須使用 Index 確保 Key 唯一
 							key={`${opt}-${idx}`}
 							variant={btnVariant}
 							className="h-16 text-lg justify-start px-6 text-left whitespace-normal"

@@ -179,7 +179,6 @@ export function CardForm({
 					/>
 				</div>
 
-				{/* ▼▼▼ 新增：圖片上傳區 ▼▼▼ */}
 				<div className="space-y-2">
 					<Label>配圖 (選填)</Label>
 					<ImageUploader
@@ -188,7 +187,6 @@ export function CardForm({
 						disabled={saving}
 					/>
 				</div>
-				{/* ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲ */}
 			</div>
 
 			<div className="flex justify-end pt-4 border-t gap-2">
