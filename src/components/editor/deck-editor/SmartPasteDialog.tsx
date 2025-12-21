@@ -1,6 +1,6 @@
 import { ArrowRight, ClipboardPaste } from "lucide-react";
 import { useState } from "react";
-import { toast } from "sonner"; // 記得引入 toast
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -30,7 +30,6 @@ export function SmartPasteDialog({ onParsed }: SmartPasteDialogProps) {
 	const handleParse = () => {
 		const result = TextParser.parseChoiceQuestion(text);
 
-		// 簡單驗證
 		const filledOptions = result.options.filter(Boolean).length;
 		if (filledOptions < 2) {
 			toast.error("解析失敗：找不到足夠的選項 (至少要有 A, B)");
@@ -53,27 +52,32 @@ export function SmartPasteDialog({ onParsed }: SmartPasteDialogProps) {
 					<ClipboardPaste className="h-4 w-4" /> 智慧貼上
 				</Button>
 			</DialogTrigger>
-			<DialogContent className="sm:max-w-md">
+			<DialogContent className="sm:max-w-lg w-[95vw]">
+				{" "}
+				{/* 確保在手機版有邊距 */}
 				<DialogHeader>
 					<DialogTitle>智慧貼上 (Smart Paste)</DialogTitle>
 					<DialogDescription>
-						支援格式：
-						<br />
-						題目...
-						<br />
-						(A) 選項一 (B) 選項二...
-						<br />
-						答案：B
-						<br />
-						解析：...
+						支援格式：題目... (A) 選項... 答案：A 解析：...
 					</DialogDescription>
 				</DialogHeader>
-				<div className="space-y-4 py-2">
+				{/* 
+                   ▼▼▼ 修正重點 ▼▼▼ 
+                   1. min-w-0: 防止 Flex/Grid 子元素撐開父層
+                   2. w-full: 確保佔滿寬度
+                */}
+				<div className="space-y-4 py-2 w-full min-w-0">
 					<Textarea
 						value={text}
 						onChange={(e) => setText(e.target.value)}
 						placeholder={`範例：\n請問台灣最高的山是？\n(A) 阿里山\n(B) 玉山\n(C) 陽明山\n(D) 雪山\n\n答案：B\n解析：玉山主峰海拔 3952 公尺。`}
-						className="h-64 font-mono text-sm"
+						// 3. 強制樣式覆蓋
+						// field-sizing-fixed: (透過 style) 強制固定高度，不隨內容長高
+						// h-64: 固定高度 16rem
+						// resize-none: 禁止使用者拉大
+						// break-all: 確保長字串會換行，不會撐破寬度
+						className="h-64 w-full resize-none break-all whitespace-pre-wrap"
+						style={{ fieldSizing: "fixed" } as React.CSSProperties}
 					/>
 				</div>
 				<DialogFooter>

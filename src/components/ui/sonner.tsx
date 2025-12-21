@@ -23,7 +23,6 @@ const Toaster = ({ ...props }: ToasterProps) => {
 			toastOptions={{
 				classNames: {
 					toast:
-						// ▼▼▼ 液態玻璃樣式 (Liquid Glass) ▼▼▼
 						// 1. 背景半透明 + 高斯模糊
 						"group toast group-[.toaster]:!bg-white/80 dark:group-[.toaster]:!bg-slate-950/80 group-[.toaster]:backdrop-blur-xl " +
 						// 2. 邊框：細緻的白色/深色半透明邊框
@@ -32,7 +31,6 @@ const Toaster = ({ ...props }: ToasterProps) => {
 						"group-[.toaster]:!shadow-2xl dark:group-[.toaster]:!shadow-black/50 " +
 						// 4. 文字與佈局
 						"group-[.toaster]:!text-slate-900 dark:group-[.toaster]:!text-slate-100 rounded-2xl p-4 gap-3 font-sans items-start",
-					// ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
 
 					description:
 						"group-[.toast]:!text-slate-500 dark:group-[.toast]:!text-slate-400 font-normal leading-relaxed",

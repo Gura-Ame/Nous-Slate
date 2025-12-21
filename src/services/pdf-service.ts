@@ -1,11 +1,10 @@
-import { renderToStaticMarkup } from "react-dom/server"; // 引入 React 轉 HTML 工具
-import ReactMarkdown from "react-markdown"; // 引入 Markdown 組件
-import { CardService } from "./card-service";
-import type { Deck } from "@/types/schema";
 import React from "react";
-import remarkGfm from "remark-gfm";
+import { renderToStaticMarkup } from "react-dom/server";
+import { MarkdownDisplay } from "@/components/shared/MarkdownDisplay";
+import type { Deck } from "@/types/schema";
+import { CardService } from "./card-service";
 
-// 輔助：洗牌陣列
+// 輔助：洗牌陣列 (僅用於舊版資料相容)
 function shuffle<T>(array: T[]): T[] {
 	return [...array].sort(() => Math.random() - 0.5);
 }
@@ -15,22 +14,26 @@ function toLetter(index: number) {
 	return String.fromCharCode(65 + index);
 }
 
-// 核心修改：使用 ReactMarkdown + renderToStaticMarkup 轉 HTML
+// 輔助：抓取當前頁面的所有 CSS
+function getAppStyles() {
+	const styles = Array.from(
+		document.querySelectorAll('style, link[rel="stylesheet"]'),
+	)
+		.map((node) => node.outerHTML)
+		.join("\n");
+	return styles;
+}
+
 function parseMarkdown(text: string) {
 	if (!text) return "";
-	// 將 React 組件渲染成靜態 HTML 字串
+	// 直接渲染我們的共用組件，確保邏輯(包含螢光筆)一致
 	return renderToStaticMarkup(
-		React.createElement(
-			"div",
-			{ className: "markdown-content" },
-			React.createElement(ReactMarkdown, { remarkPlugins: [remarkGfm] }, text),
-		),
+		React.createElement(MarkdownDisplay, { content: text }),
 	);
 }
 
 export const PdfService = {
 	generatePrintView: async (decks: Deck[]) => {
-		// 1. 準備資料
 		const deckData = await Promise.all(
 			decks.map(async (deck) => {
 				const cards = await CardService.getCardsByDeck(deck.id);
@@ -38,13 +41,19 @@ export const PdfService = {
 					if (card.type === "choice") {
 						const answer = card.content.answer || "";
 						const options = card.content.options || [];
-						let allOptions: string[];
+
+						let finalOptions: string[];
+
+						// 如果選項陣列中已經包含答案，代表是新格式 (固定順序 ABCD)
+						// 我們直接使用原陣列，不洗牌
 						if (options.includes(answer)) {
-							allOptions = options; // 固定順序
+							finalOptions = options;
 						} else {
-							allOptions = shuffle([answer, ...options]); // 舊版洗牌
+							// 舊格式 (options 只有干擾項)，需要合併後洗牌
+							finalOptions = shuffle([answer, ...options]);
 						}
-						return { ...card, _shuffledOptions: allOptions };
+
+						return { ...card, _shuffledOptions: finalOptions };
 					}
 					return card;
 				});
@@ -58,32 +67,78 @@ export const PdfService = {
 			return;
 		}
 
-		// 2. 建構 HTML
+		const appStyles = getAppStyles();
+
 		const htmlContent = `
       <!DOCTYPE html>
       <html>
         <head>
           <title>Nous Slate - 題庫匯出</title>
+          
+          ${appStyles}
+
           <style>
-            @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&family=Noto+Serif+TC:wght@400;700&display=swap');
-            body { font-family: 'Noto Sans TC', sans-serif; padding: 40px; color: #1a1a1a; line-height: 1.6; }
+            @media print {
+                body { 
+                    -webkit-print-color-adjust: exact; 
+                    print-color-adjust: exact; 
+                }
+            }
+
+            body { 
+                font-family: 'Noto Sans TC', sans-serif; 
+                padding: 40px; 
+                color: #1a1a1a; 
+                line-height: 1.6;
+                background: white !important; 
+            }
             
             .page-break { page-break-after: always; }
             .no-break { break-inside: avoid; }
             
-            h2 { font-size: 20px; background: #f0f0f0; padding: 8px 15px; border-left: 5px solid #333; margin-top: 30px; }
-            .meta { color: #666; font-size: 14px; margin-bottom: 30px; }
+            h2 { 
+                font-size: 20px; 
+                background: #f3f4f6; 
+                padding: 8px 15px; 
+                border-left: 5px solid #374151; 
+                margin-top: 30px; 
+                margin-bottom: 15px;
+                font-weight: bold;
+            }
             
-            .question-item { margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px dashed #eee; }
-            .q-stem { font-size: 16px; font-weight: bold; margin-bottom: 12px; }
+            .meta { color: #6b7280; font-size: 14px; margin-bottom: 30px; }
             
-            /* Markdown 樣式修正 (因為 ReactMarkdown 會產出 p 標籤) */
+            .question-item { 
+                margin-bottom: 25px; 
+                padding-bottom: 15px; 
+                border-bottom: 1px dashed #e5e7eb; 
+            }
+            
+            .q-stem { font-size: 16px; margin-bottom: 12px; }
             .q-stem p { margin: 0; display: inline; } 
             .q-stem strong { color: #000; }
+
+            /* 強制表格邊框 */
+            table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 14px; }
+            th, td { border: 1px solid #333; padding: 6px 12px; text-align: left; }
+            th { background-color: #f3f4f6; font-weight: bold; }
             
-            .q-type { font-size: 12px; color: #888; border: 1px solid #ddd; padding: 2px 6px; border-radius: 4px; margin-right: 8px; vertical-align: middle;}
+            .q-type { 
+                font-size: 12px; 
+                color: #6b7280; 
+                border: 1px solid #d1d5db; 
+                padding: 2px 6px; 
+                border-radius: 4px; 
+                margin-right: 8px; 
+                vertical-align: middle;
+            }
             
-            .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-left: 20px; }
+            .options-grid { 
+                display: grid; 
+                grid-template-columns: 1fr 1fr; 
+                gap: 10px; 
+                margin-left: 20px; 
+            }
             .option { font-size: 14px; }
             
             .zhuyin-box { display: inline-flex; border: 1px solid #000; margin-right: 6px; vertical-align: middle; }
@@ -91,23 +146,23 @@ export const PdfService = {
             .zhuyin-bopo { width: 18px; display: flex; flex-direction: column; justify-content: center; align-items: center; font-size: 10px; font-family: 'Noto Serif TC', serif; }
             .blank-char { color: transparent; }
             
-            .answer-key { background: #f9fafb; padding: 20px; border-radius: 8px; border: 1px solid #e5e7eb; }
-            .ans-item { margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #eee; }
+            .answer-key { 
+                background: #f9fafb; 
+                padding: 20px; 
+                border-radius: 8px; 
+                border: 1px solid #e5e7eb; 
+            }
+            .ans-item { border-bottom: 1px solid #eee; }
             .ans-item:last-child { border-bottom: none; }
+            
             .ans-label { font-weight: bold; color: #059669; font-size: 16px; }
             
-            .ans-exp { color: #4b5563; font-size: 14px; margin-top: 8px; line-height: 1.8; }
-            /* 解析內容的 Markdown 樣式修正 */
-            .ans-exp p { margin: 4px 0; }
-            .ans-exp ul, .ans-exp ol { margin: 4px 0; padding-left: 20px; }
-            .ans-exp li { margin-bottom: 2px; }
-            .ans-exp strong { color: #111; }
-            .ans-exp code { background: #eee; padding: 2px 4px; border-radius: 4px; font-family: monospace; }
+            .ans-exp { margin-top: 8px; font-size: 14px; color: #374151; }
           </style>
         </head>
         <body>
           
-          <!-- 第一部分：試題卷 -->
+          <!-- 試題卷 -->
           <div class="section-questions">
             ${deckData
 							.map(
@@ -118,7 +173,7 @@ export const PdfService = {
                     
                     ${cards
 											.map((card, index) => {
-												// @ts-ignore
+												// @ts-expect-error
 												const opts = card._shuffledOptions || [];
 												let contentHtml = "";
 
@@ -163,15 +218,13 @@ export const PdfService = {
 													contentHtml = `<div style="border-bottom: 1px solid #333; display:inline-block; width: 100px;"></div>`;
 												}
 
-												// 使用 Library 轉換 Markdown
 												const stemHtml = parseMarkdown(card.content.stem);
 
 												return `
                             <div class="question-item no-break">
                                 <div class="q-stem">
                                     <span class="q-type">${index + 1}</span>
-                                    <!-- 這裡插入轉換後的 HTML -->
-                                    <span style="display:inline-block; vertical-align:top;">${stemHtml}</span>
+                                    <span style="display:inline-block; vertical-align:top; width: 90%;">${stemHtml}</span>
                                 </div>
                                 ${contentHtml}
                             </div>
@@ -186,10 +239,10 @@ export const PdfService = {
 
           <div class="page-break"></div>
 
-          <!-- 第二部分：解析卷 -->
+          <!-- 解析卷 -->
           <div class="section-answers">
              <div style="text-align: center; margin-bottom: 40px;">
-                <h1 style="border: none; color: #059669; border-color: #059669;">解答與解析</h1>
+                <h1 style="border: none; color: #059669; border-color: #059669; font-size: 24px; font-weight: bold; border-bottom: 2px solid #059669; padding-bottom: 10px;">解答與解析</h1>
             </div>
 
             ${deckData
@@ -203,7 +256,7 @@ export const PdfService = {
 												let answerText = card.content.answer || "";
 
 												if (card.type === "choice") {
-													// @ts-ignore
+													// @ts-expect-error
 													const opts = card._shuffledOptions || [];
 													const ansIndex = opts.indexOf(
 														card.content.answer || "",
@@ -218,7 +271,6 @@ export const PdfService = {
 													answerText = blocks.map((b) => b.char).join("");
 												}
 
-												// 使用 Library 轉換解析 Markdown
 												const meaningHtml = parseMarkdown(
 													card.content.meaning || "",
 												);
@@ -242,7 +294,7 @@ export const PdfService = {
 
           <script>
             window.onload = () => {
-               setTimeout(() => window.print(), 500);
+               setTimeout(() => window.print(), 800);
             }
           </script>
         </body>

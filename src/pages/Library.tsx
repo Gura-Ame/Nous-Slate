@@ -269,7 +269,6 @@ export default function Library() {
 										<div className="flex justify-between items-start gap-3">
 											<div className="space-y-2 flex-1 min-w-0">
 												{/* 
-                                                    ▼▼▼ 標題修復 ▼▼▼
                                                     使用 line-clamp-2 限制兩行
                                                     使用 break-words 強制長單字換行
                                                     增加 min-h-[3.5rem] 確保對齊
@@ -280,7 +279,6 @@ export default function Library() {
 												>
 													{deck.title}
 												</CardTitle>
-												{/* ▲▲▲▲▲▲▲▲▲▲▲▲▲▲ */}
 
 												<div className="flex flex-wrap gap-1.5 h-6 overflow-hidden">
 													{deck.tags && deck.tags.length > 0 ? (

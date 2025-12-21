@@ -1,9 +1,8 @@
 import { Volume2 } from "lucide-react";
-import ReactMarkdown from "react-markdown";
 import { CharacterBlock } from "@/components/quiz/CharacterBlock";
+import { MarkdownDisplay } from "@/components/shared/MarkdownDisplay";
 import { Button } from "@/components/ui/button";
 import type { CardType } from "@/types/schema";
-import remarkGfm from "remark-gfm";
 
 interface CardPreviewProps {
 	type: CardType;
@@ -50,7 +49,7 @@ export function CardPreview({
 				stem && (
 					<div className="prose dark:prose-invert text-center max-w-none">
 						<div className="text-2xl font-bold">
-							<ReactMarkdown remarkPlugins={[remarkGfm]}>{stem}</ReactMarkdown>
+							<MarkdownDisplay content={stem} />
 						</div>
 					</div>
 				)}
@@ -101,22 +100,18 @@ export function CardPreview({
 						))}
 					</div>
 
-					{/* ▼▼▼ 新增：預覽解析 (Sticky Note 風格) ▼▼▼ */}
 					{definition && (
-						<div className="relative mt-4 p-4 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 text-sm">
-							<div className="font-bold text-yellow-700 dark:text-yellow-400 mb-1 flex items-center gap-2">
-								<span className="text-xs border border-yellow-300 px-1 rounded bg-yellow-100">
+						<div className="relative mt-4 p-4 rounded-lg bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 text-sm">
+							<div className="font-bold text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-2">
+								<span className="text-xs border border-slate-300 dark:border-slate-600 px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800">
 									解析
 								</span>
 							</div>
-							<div className="prose dark:prose-invert text-slate-600 dark:text-slate-300 max-w-none">
-								<ReactMarkdown remarkPlugins={[remarkGfm]}>
-									{definition}
-								</ReactMarkdown>
+							<div className="text-slate-600 dark:text-slate-400 max-w-none">
+								<MarkdownDisplay content={definition} />
 							</div>
 						</div>
 					)}
-					{/* ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲ */}
 				</div>
 			)}
 
@@ -134,9 +129,7 @@ export function CardPreview({
 						</Button>
 					)}
 					<div className="text-sm text-muted-foreground mt-2 prose dark:prose-invert text-center">
-						<ReactMarkdown remarkPlugins={[remarkGfm]}>
-							{definition || "Definitions..."}
-						</ReactMarkdown>
+						<MarkdownDisplay content={definition || "Definitions..."} />
 					</div>
 				</div>
 			)}

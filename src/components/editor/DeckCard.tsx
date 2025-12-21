@@ -65,14 +65,13 @@ export function DeckCard({
 			{/* 背景光暈 (裝飾用) */}
 			<div
 				className={cn(
-					"absolute -inset-0.5 bg-gradient-to-br from-primary/30 to-blue-500/30 rounded-2xl blur opacity-0 group-hover:opacity-100 transition duration-500",
+					"absolute -inset-0.5 bg-linear-to-br from-primary/30 to-blue-500/30 rounded-2xl blur opacity-0 group-hover:opacity-100 transition duration-500",
 					isSelected && "opacity-100 from-primary to-primary",
 				)}
 			/>
 
 			<Card
 				className={cn(
-					// ▼▼▼ 液態玻璃核心樣式：深色、統一背景 ▼▼▼
 					"relative h-full flex flex-col overflow-hidden border-0 rounded-xl",
 					"bg-slate-900/80 backdrop-blur-xl", // 加深背景不透明度，讓文字更清楚
 					"border border-white/10 shadow-xl",
@@ -99,7 +98,7 @@ export function DeckCard({
 						<div className="space-y-3 flex-1 min-w-0">
 							<div className="flex flex-col gap-2">
 								<CardTitle
-									className="text-lg md:text-xl font-bold line-clamp-2 break-words leading-tight min-h-[3.5rem] text-slate-100 group-hover:text-primary transition-colors"
+									className="text-lg md:text-xl font-bold line-clamp-2 wrap-break-word leading-tight min-h-14 text-slate-100 group-hover:text-primary transition-colors"
 									title={deck.title}
 								>
 									{deck.title}
@@ -212,12 +211,11 @@ export function DeckCard({
 				</CardHeader>
 
 				<CardContent className="flex-1 pt-0 relative z-10">
-					<p className="text-sm text-slate-400 line-clamp-2 min-h-[2.5rem] leading-relaxed">
+					<p className="text-sm text-slate-400 line-clamp-2 min-h-10 leading-relaxed">
 						{deck.description || "無描述"}
 					</p>
 				</CardContent>
 
-				{/* ▼▼▼ Footer 修改：移除 bg-black/20，只保留邊框線 ▼▼▼ */}
 				<CardFooter className="pt-3 pb-3 border-t border-white/10 flex justify-between items-center text-sm gap-2 relative z-10">
 					<div className="flex items-center text-slate-500 gap-2 text-xs font-mono">
 						<BookOpen className="h-3.5 w-3.5" />

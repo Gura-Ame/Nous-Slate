@@ -24,8 +24,8 @@ import { cn } from "@/lib/utils";
 import { DataService } from "@/services/data-service";
 import { DeckService } from "@/services/deck-service";
 import { FolderService } from "@/services/folder-service";
-import type { Deck, Folder as FolderType } from "@/types/schema";
 import { PdfService } from "@/services/pdf-service";
+import type { Deck, Folder as FolderType } from "@/types/schema";
 
 export default function Editor() {
 	const { user } = useAuth();

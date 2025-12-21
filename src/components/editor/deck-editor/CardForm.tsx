@@ -77,7 +77,6 @@ export function CardForm({
 		const fieldName = `option${optIndex}` as keyof DeckEditorFormData;
 		const val = watch(fieldName);
 
-		// ▼▼▼ 修正 1：嚴格檢查型別與空值，解決 TS 錯誤 ▼▼▼
 		if (typeof val !== "string" || !val) {
 			return toast.error("請先輸入選項內容");
 		}
@@ -268,7 +267,7 @@ export function CardForm({
 								}}
 							/>
 						</div>
-						{/* ▼▼▼ 修正 4：優化 Tailwind Class ▼▼▼ */}
+
 						<Textarea
 							placeholder="輸入題目..."
 							className="font-mono text-sm min-h-20"
@@ -281,7 +280,6 @@ export function CardForm({
 						{/* 渲染 4 個選項輸入框 */}
 						{[1, 2, 3, 4].map((idx) => (
 							<div key={idx} className="flex gap-2 items-center">
-								{/* ▼▼▼ 修正 2：改用 button 避免 Biome 報錯 ▼▼▼ */}
 								<button
 									type="button"
 									className={cn(
@@ -295,7 +293,6 @@ export function CardForm({
 								>
 									{["A", "B", "C", "D"][idx - 1]}
 								</button>
-								{/* ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲ */}
 
 								<Input
 									{...register(`option${idx}` as keyof DeckEditorFormData)}

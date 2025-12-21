@@ -1,10 +1,9 @@
 import { Lightbulb } from "lucide-react"; // 引入燈泡圖示
 import { useCallback, useEffect, useState } from "react";
-import ReactMarkdown from "react-markdown";
+import { MarkdownDisplay } from "@/components/shared/MarkdownDisplay";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { Card } from "@/types/schema";
-import remarkGfm from "remark-gfm";
 
 function shuffleArray<T>(array: T[]): T[] {
 	const newArr = [...array];
@@ -30,7 +29,6 @@ export function ChoiceMode({ card, status, onSubmit }: ChoiceModeProps) {
 		const answer = card.content.answer || "";
 		const options = card.content.options || [];
 
-		// ▼▼▼ 判斷是否為新格式 (固定順序) ▼▼▼
 		// 如果 options 陣列裡已經包含答案，代表這是我們新存的 [A, B, C, D]
 		if (options.includes(answer)) {
 			setShuffledOptions(options); // 不洗牌，直接用
@@ -78,10 +76,8 @@ export function ChoiceMode({ card, status, onSubmit }: ChoiceModeProps) {
 					<div className="absolute -top-10 -left-10 w-32 h-32 bg-primary/20 rounded-full blur-3xl pointer-events-none" />
 					<div className="absolute -bottom-10 -right-10 w-32 h-32 bg-blue-500/20 rounded-full blur-3xl pointer-events-none" />
 
-					<div className="relative z-10 text-2xl md:text-2xl font-bold leading-relaxed text-slate-800 dark:text-slate-100 drop-shadow-sm prose dark:prose-invert max-w-none">
-						<ReactMarkdown remarkPlugins={[remarkGfm]}>
-							{card.content.stem}
-						</ReactMarkdown>
+					<div className="relative z-10 text-2xl md:text-2xl leading-relaxed text-slate-800 dark:text-slate-100 drop-shadow-sm prose dark:prose-invert max-w-none">
+						<MarkdownDisplay content={card.content.stem} />
 					</div>
 				</div>
 			)}
@@ -141,38 +137,30 @@ export function ChoiceMode({ card, status, onSubmit }: ChoiceModeProps) {
 				})}
 			</div>
 
-			{/* ▼▼▼ 新增：毛玻璃便利貼 (Sticky Note) 風格解析區 ▼▼▼ */}
 			{status !== "question" && card.content.meaning && (
 				<div className="relative mt-8 animate-in slide-in-from-bottom-8 fade-in duration-500 z-20">
-					{/* 便利貼本體 */}
-					<div className="relative mx-auto max-w-3xl transform -rotate-1 hover:rotate-0 transition-transform duration-300">
-						{/* 頂部膠帶效果 */}
-						<div className="absolute -top-3 left-1/2 -translate-x-1/2 w-32 h-8 bg-white/30 backdrop-blur-sm rotate-2 shadow-sm z-10 border border-white/20" />
-
+					<div className="relative mx-auto max-w-3xl">
 						<div
 							className={cn(
-								"rounded-xl border border-yellow-200/50 dark:border-yellow-700/30 p-8 shadow-xl",
-								// 液態黃色玻璃背景
-								"bg-linear-to-br from-yellow-50/90 to-yellow-100/80 dark:from-yellow-900/40 dark:to-yellow-950/40 backdrop-blur-xl",
+								// 樣式：灰白色系玻璃，無膠帶，無傾斜
+								"rounded-2xl border border-white/40 dark:border-white/10 p-8 shadow-xl",
+								"bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl",
 							)}
 						>
-							<div className="flex items-center gap-3 mb-4 text-yellow-700 dark:text-yellow-400">
-								<div className="p-2 bg-yellow-200/50 rounded-full">
+							<div className="flex items-center gap-3 mb-4 text-slate-700 dark:text-slate-200">
+								<div className="p-2 bg-white/50 dark:bg-slate-800/50 rounded-full shadow-sm">
 									<Lightbulb className="w-6 h-6" />
 								</div>
 								<h3 className="text-xl font-bold">解析與筆記</h3>
 							</div>
 
-							<div className="prose prose-lg dark:prose-invert max-w-none text-slate-700 dark:text-slate-200 leading-relaxed font-medium">
-								<ReactMarkdown remarkPlugins={[remarkGfm]}>
-									{card.content.meaning}
-								</ReactMarkdown>
+							<div className="text-slate-700 dark:text-slate-200 leading-relaxed font-medium">
+								<MarkdownDisplay content={card.content.meaning} />
 							</div>
 						</div>
 					</div>
 				</div>
 			)}
-			{/* ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲ */}
 		</div>
 	);
 }

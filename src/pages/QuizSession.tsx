@@ -1,6 +1,6 @@
 import { CheckCircle } from "lucide-react";
 import { useEffect, useRef } from "react";
-import { useNavigate, useParams } from "react-router-dom"; // 確保引入 useParams
+import { useNavigate } from "react-router-dom"; // 確保引入 useParams
 import { ExitDialog } from "@/components/quiz/session/ExitDialog";
 import { QuizArea } from "@/components/quiz/session/QuizArea";
 import { QuizFeedback } from "@/components/quiz/session/QuizFeedback";
@@ -50,7 +50,7 @@ export default function QuizSession() {
 		return (
 			<div className="h-screen flex flex-col items-center justify-center space-y-6 bg-slate-50 dark:bg-slate-950 animate-in fade-in zoom-in duration-500">
 				<CheckCircle className="w-24 h-24 text-emerald-500 mb-4" />
-				<div className="text-4xl font-bold font-serif text-slate-800 dark:text-slate-100">
+				<div className="text-4xl text-slate-800 dark:text-slate-100">
 					練習完成！
 				</div>
 				<p className="text-muted-foreground">本次練習：{cards.length} 題</p>
@@ -109,7 +109,7 @@ export default function QuizSession() {
 					/>
 
 					{/* 底部：結果回饋區 (使用固定定位或放在流式佈局中皆可，這裡放流式佈局下方) */}
-					<div className="w-full flex justify-center mt-8 min-h-[4rem]">
+					<div className="w-full flex justify-center mt-8 min-h-16">
 						<QuizFeedback
 							status={status}
 							card={currentCard}

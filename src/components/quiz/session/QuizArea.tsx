@@ -1,11 +1,10 @@
 import { Volume2 } from "lucide-react";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
 import { ChoiceMode } from "@/components/quiz/modes/ChoiceMode";
 import { DictationMode } from "@/components/quiz/modes/DictationMode";
 import { FillMode } from "@/components/quiz/modes/FillMode";
 import { FlashcardMode } from "@/components/quiz/modes/FlashcardMode";
 import { TermMode } from "@/components/quiz/modes/TermMode";
+import { MarkdownDisplay } from "@/components/shared/MarkdownDisplay";
 import type { Grade } from "@/lib/srs-algo";
 import { speak } from "@/lib/tts";
 import type { QuizStatus } from "@/store/useQuizStore";
@@ -57,9 +56,7 @@ export function QuizArea({ card, status, onAnswer }: QuizAreaProps) {
 				{/* 解析 */}
 				<div className="text-xl md:text-2xl text-slate-500 max-w-2xl mx-auto min-h-8 font-medium prose dark:prose-invert markdown-table">
 					{status !== "question" && (
-						<ReactMarkdown remarkPlugins={[remarkGfm]}>
-							{card.content.meaning || ""}
-						</ReactMarkdown>
+						<MarkdownDisplay content={card.content.meaning || ""} />
 					)}
 				</div>
 			</div>
