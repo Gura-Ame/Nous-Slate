@@ -194,4 +194,31 @@
 	.rotate-y-180 {
 		transform: rotateY(180deg);
 	}
+
+	table {
+		width: 100%;
+		border-collapse: collapse;
+		margin: 1em 0;
+		font-size: 0.8em; /* 表格字體稍微縮小 */
+	}
+	th,
+	td {
+		border: 1px solid theme("colors.slate.300");
+		padding: 8px 12px;
+		text-align: left;
+	}
+	th {
+		background-color: theme("colors.slate.100");
+		font-weight: bold;
+	}
+
+	/* 深色模式適配 */
+	.dark th,
+	.dark td {
+		border-color: theme("colors.slate.600");
+	}
+	.dark th {
+		background-color: theme("colors.slate.800");
+		color: theme("colors.slate.100");
+	}
 }

@@ -1,4 +1,13 @@
-import { Download, Folder, FolderOpen, FolderPlus, Plus } from "lucide-react";
+import {
+	CheckSquare,
+	Download,
+	Folder,
+	FolderOpen,
+	FolderPlus,
+	Plus,
+	Printer,
+	X,
+} from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -16,6 +25,7 @@ import { DataService } from "@/services/data-service";
 import { DeckService } from "@/services/deck-service";
 import { FolderService } from "@/services/folder-service";
 import type { Deck, Folder as FolderType } from "@/types/schema";
+import { PdfService } from "@/services/pdf-service";
 
 export default function Editor() {
 	const { user } = useAuth();
@@ -30,6 +40,41 @@ export default function Editor() {
 	const [editingFolder, setEditingFolder] = useState<FolderType | undefined>(
 		undefined,
 	);
+
+	const [isSelectionMode, setIsSelectionMode] = useState(false);
+	const [selectedDeckIds, setSelectedDeckIds] = useState<Set<string>>(
+		new Set(),
+	);
+
+	const toggleSelectionMode = () => {
+		if (isSelectionMode) {
+			// 取消模式時清空
+			setIsSelectionMode(false);
+			setSelectedDeckIds(new Set());
+		} else {
+			setIsSelectionMode(true);
+		}
+	};
+
+	// 單選/取消單選 Deck
+	const toggleSelectDeck = (deckId: string) => {
+		const newSet = new Set(selectedDeckIds);
+		if (newSet.has(deckId)) newSet.delete(deckId);
+		else newSet.add(deckId);
+		setSelectedDeckIds(newSet);
+	};
+
+	// 匯出 PDF
+	const handleExportPdf = async () => {
+		if (selectedDeckIds.size === 0) return toast.error("請至少選擇一個題庫");
+
+		const selectedDecks = decks.filter((d) => selectedDeckIds.has(d.id));
+		toast.info("正在準備列印...");
+		await PdfService.generatePrintView(selectedDecks);
+
+		// 匯出後退出選取模式
+		toggleSelectionMode();
+	};
 
 	// 1. 載入資料 (Deck + Folders)
 	const fetchData = useCallback(async () => {
@@ -146,13 +191,34 @@ export default function Editor() {
 		<div className="container mx-auto p-8 space-y-10">
 			<PageHeader title="創作後台" description="管理您的題庫與資料夾分類。">
 				<div className="flex gap-2 flex-wrap">
-					<ImportDeckDialog onSuccess={fetchData} />
-					<Button variant="outline" onClick={() => openFolderDialog()}>
-						<FolderPlus className="mr-2 h-4 w-4" /> 新增資料夾
-					</Button>
-					<Button onClick={() => openDeckDialog()}>
-						<Plus className="mr-2 h-4 w-4" /> 建立新題庫
-					</Button>
+					{isSelectionMode ? (
+						<>
+							<Button
+								variant="default"
+								onClick={handleExportPdf}
+								className="bg-purple-600 hover:bg-purple-700"
+							>
+								<Printer className="mr-2 h-4 w-4" /> 列印 / 轉 PDF (
+								{selectedDeckIds.size})
+							</Button>
+							<Button variant="outline" onClick={toggleSelectionMode}>
+								<X className="mr-2 h-4 w-4" /> 取消選取
+							</Button>
+						</>
+					) : (
+						<>
+							<Button variant="outline" onClick={toggleSelectionMode}>
+								<CheckSquare className="mr-2 h-4 w-4" /> 多選匯出
+							</Button>
+							<ImportDeckDialog onSuccess={fetchData} />
+							<Button variant="outline" onClick={() => openFolderDialog()}>
+								<FolderPlus className="mr-2 h-4 w-4" /> 新增資料夾
+							</Button>
+							<Button onClick={() => openDeckDialog()}>
+								<Plus className="mr-2 h-4 w-4" /> 建立新題庫
+							</Button>
+						</>
+					)}
 				</div>
 			</PageHeader>
 
@@ -243,6 +309,9 @@ export default function Editor() {
 											onEdit={() => openDeckDialog(deck)}
 											onDelete={() => handleDeleteDeck(deck.id)}
 											onMove={handleMoveDeck}
+											isSelectionMode={isSelectionMode}
+											isSelected={selectedDeckIds.has(deck.id)}
+											onToggleSelect={() => toggleSelectDeck(deck.id)}
 										/>
 									))}
 								</div>
@@ -272,6 +341,9 @@ export default function Editor() {
 									onEdit={() => openDeckDialog(deck)}
 									onDelete={() => handleDeleteDeck(deck.id)}
 									onMove={handleMoveDeck}
+									isSelectionMode={isSelectionMode}
+									isSelected={selectedDeckIds.has(deck.id)}
+									onToggleSelect={() => toggleSelectDeck(deck.id)}
 								/>
 							))}
 						</div>

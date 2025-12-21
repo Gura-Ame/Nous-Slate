@@ -1,21 +1,18 @@
 import { CheckCircle } from "lucide-react";
 import { useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
-// 2. 引入 UI Components
+import { useNavigate, useParams } from "react-router-dom"; // 確保引入 useParams
 import { ExitDialog } from "@/components/quiz/session/ExitDialog";
 import { QuizArea } from "@/components/quiz/session/QuizArea";
 import { QuizFeedback } from "@/components/quiz/session/QuizFeedback";
 import { QuizHeader } from "@/components/quiz/session/QuizHeader";
 import { PageLoading } from "@/components/shared/PageLoading";
 import { Button } from "@/components/ui/button";
-// 1. 引入 Logic Hook
 import { useQuizController } from "@/hooks/useQuizController";
 
 export default function QuizSession() {
 	const navigate = useNavigate();
 	const containerRef = useRef<HTMLDivElement>(null);
 
-	// 3. 使用 Hook 取得所有狀態與控制函式
 	const {
 		authLoading,
 		isLoading,
@@ -32,8 +29,6 @@ export default function QuizSession() {
 		confirmExit,
 	} = useQuizController();
 
-	// 4. 全域鍵盤監聽 (只處理 Enter)
-	// (個別題型的鍵盤邏輯，已經封裝在 TermMode/ChoiceMode 裡面了)
 	useEffect(() => {
 		const handleKey = (e: KeyboardEvent) => {
 			if ((status === "success" || status === "failure") && e.key === "Enter") {
@@ -48,8 +43,6 @@ export default function QuizSession() {
 		window.addEventListener("keydown", handleKey);
 		return () => window.removeEventListener("keydown", handleKey);
 	}, [status, handleNext, navigate]);
-
-	// --- Renders ---
 
 	if (authLoading || isLoading) return <PageLoading message="準備練習中..." />;
 
@@ -88,32 +81,45 @@ export default function QuizSession() {
 	return (
 		<div
 			ref={containerRef}
-			className="h-screen flex flex-col bg-slate-50 dark:bg-slate-950 cursor-default outline-none"
-			// biome-ignore lint/a11y/noNoninteractiveTabindex: 需要捕獲全域鍵盤事件
+			// 這裡使用 flex-col 讓 Header 與 Main 上下排列
+			className="h-screen flex flex-col bg-slate-50 dark:bg-slate-950 cursor-default outline-none overflow-hidden"
 			tabIndex={0}
 		>
-			<QuizHeader
-				currentIndex={currentIndex}
-				total={cards.length}
-				onExit={handleExitClick}
-			/>
+			{/* Header 高度固定，不會浮動在內容上方 */}
+			<div className="shrink-0 z-50 relative">
+				<QuizHeader
+					currentIndex={currentIndex}
+					total={cards.length}
+					onExit={handleExitClick}
+				/>
+			</div>
 
-			<main className="flex-1 flex flex-col items-center justify-center p-8 space-y-12 pb-32 overflow-y-auto">
-				{/* 中間：題目與作答區 */}
-				<QuizArea card={currentCard} status={status} onAnswer={handleAnswer} />
-
-				{/* 底部：結果回饋區 */}
-				<div className="min-h-24 flex items-center justify-center w-full">
-					<QuizFeedback
-						status={status}
+			{/* 
+               Main 區域：
+               flex-1: 自動填滿剩餘高度
+               overflow-y-auto: 內容過長時，只有這裡會捲動
+            */}
+			<main className="flex-1 overflow-y-auto w-full relative">
+				<div className="min-h-full flex flex-col items-center justify-center p-4 md:p-8 pb-32">
+					{/* 中間：題目與作答區 */}
+					<QuizArea
 						card={currentCard}
-						isProcessing={isProcessing}
-						onNext={handleNext}
+						status={status}
+						onAnswer={handleAnswer}
 					/>
+
+					{/* 底部：結果回饋區 (使用固定定位或放在流式佈局中皆可，這裡放流式佈局下方) */}
+					<div className="w-full flex justify-center mt-8 min-h-[4rem]">
+						<QuizFeedback
+							status={status}
+							card={currentCard}
+							isProcessing={isProcessing}
+							onNext={handleNext}
+						/>
+					</div>
 				</div>
 			</main>
 
-			{/* 退出確認對話框 */}
 			<ExitDialog
 				open={showExitDialog}
 				onOpenChange={setShowExitDialog}

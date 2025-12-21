@@ -13,25 +13,38 @@ const Toaster = ({ ...props }: ToasterProps) => {
 			className="toaster group"
 			richColors={false}
 			icons={{
-				success: <Check className="size-5 text-emerald-500" />,
-				info: <Info className="size-5 text-blue-500" />,
-				warning: <TriangleAlert className="size-5 text-amber-500" />,
-				error: <X className="size-5 text-red-500" />,
+				success: <Check className="size-5 text-emerald-500 drop-shadow-sm" />,
+				info: <Info className="size-5 text-blue-500 drop-shadow-sm" />,
+				warning: (
+					<TriangleAlert className="size-5 text-amber-500 drop-shadow-sm" />
+				),
+				error: <X className="size-5 text-red-500 drop-shadow-sm" />,
 			}}
 			toastOptions={{
 				classNames: {
 					toast:
-						// 使用 ! 強制覆蓋 Sonner 預設樣式
-						// 淺色：白底黑字；深色：深藍底白字 (Slate-950)
-						"group toast group-[.toaster]:!bg-white dark:group-[.toaster]:!bg-slate-950 group-[.toaster]:!text-slate-950 dark:group-[.toaster]:!text-slate-50 group-[.toaster]:!border-slate-200 dark:group-[.toaster]:!border-slate-800 group-[.toaster]:!shadow-xl rounded-xl p-4 gap-3 font-sans border",
+						// ▼▼▼ 液態玻璃樣式 (Liquid Glass) ▼▼▼
+						// 1. 背景半透明 + 高斯模糊
+						"group toast group-[.toaster]:!bg-white/80 dark:group-[.toaster]:!bg-slate-950/80 group-[.toaster]:backdrop-blur-xl " +
+						// 2. 邊框：細緻的白色/深色半透明邊框
+						"group-[.toaster]:!border-white/40 dark:group-[.toaster]:!border-white/10 group-[.toaster]:border " +
+						// 3. 陰影：深邃的陰影增加層次
+						"group-[.toaster]:!shadow-2xl dark:group-[.toaster]:!shadow-black/50 " +
+						// 4. 文字與佈局
+						"group-[.toaster]:!text-slate-900 dark:group-[.toaster]:!text-slate-100 rounded-2xl p-4 gap-3 font-sans items-start",
+					// ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
+
 					description:
-						"group-[.toast]:!text-slate-500 dark:group-[.toast]:!text-slate-400 font-normal",
+						"group-[.toast]:!text-slate-500 dark:group-[.toast]:!text-slate-400 font-normal leading-relaxed",
+
 					actionButton:
-						"group-[.toast]:!bg-slate-900 group-[.toast]:!text-slate-50 dark:group-[.toast]:!bg-slate-50 dark:group-[.toast]:!text-slate-900 font-medium",
+						"group-[.toast]:!bg-slate-900 group-[.toast]:!text-white dark:group-[.toast]:!bg-white dark:group-[.toast]:!text-slate-900 font-medium rounded-lg",
+
 					cancelButton:
-						"group-[.toast]:!bg-slate-100 group-[.toast]:!text-slate-500 dark:group-[.toast]:!bg-slate-800 dark:group-[.toast]:!text-slate-400",
-					title: "text-base font-bold",
-					icon: "self-start mt-0.5", // 讓圖標對齊標題頂部
+						"group-[.toast]:!bg-slate-100 group-[.toast]:!text-slate-500 dark:group-[.toast]:!bg-slate-800 dark:group-[.toast]:!text-slate-400 rounded-lg",
+
+					title: "text-base font-bold tracking-tight",
+					icon: "self-start mt-0.5",
 				},
 			}}
 			{...props}

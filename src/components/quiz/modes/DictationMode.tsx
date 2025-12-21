@@ -3,6 +3,8 @@ import { CharacterBlock } from "@/components/quiz/CharacterBlock";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { Card } from "@/types/schema";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 interface DictationModeProps {
 	card: Card;
@@ -185,8 +187,11 @@ export function DictationMode({ card, status, onSubmit }: DictationModeProps) {
 					<h3 className="font-bold text-lg mb-2 text-slate-900 dark:text-slate-100">
 						釋義與解析
 					</h3>
-					<div className="text-slate-600 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">
-						{card.content.meaning || "暫無解釋。"}
+
+					<div className="text-slate-600 dark:text-slate-300 leading-relaxed prose dark:prose-invert max-w-none">
+						<ReactMarkdown remarkPlugins={[remarkGfm]}>
+							{card.content.meaning || "暫無解釋。"}
+						</ReactMarkdown>
 					</div>
 				</div>
 			)}

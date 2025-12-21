@@ -1,5 +1,6 @@
 import { Eye, EyeOff, Loader2, Save, Wand2 } from "lucide-react";
 import type { UseFormReturn } from "react-hook-form";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,8 +9,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import type { CardType } from "@/types/schema";
 import { ImageUploader } from "./ImageUploader";
+import { SmartPasteDialog } from "./SmartPasteDialog";
 
-// 1. 在介面中正式加入 maskedIndices
 export interface DeckEditorFormData {
 	type: CardType;
 	stem: string;
@@ -17,11 +18,12 @@ export interface DeckEditorFormData {
 	definition: string;
 	audioUrl: string;
 	answer: string;
-	option1: string;
-	option2: string;
-	option3: string;
+	option1: string; // A
+	option2: string; // B
+	option3: string; // C
+	option4: string; // D
 	image: string;
-	maskedIndices?: number[]; // 新增此欄位
+	maskedIndices?: number[];
 }
 
 interface CardFormProps {
@@ -34,7 +36,6 @@ interface CardFormProps {
 	onCancel: () => void;
 	onAutoFillMoedict: () => void;
 	onAutoFillDict: () => void;
-	// 移除 defaultMaskedIndices，不再需要透過 props 傳遞
 }
 
 export function CardForm({
@@ -53,10 +54,8 @@ export function CardForm({
 	const stem = watch("stem");
 	const imageUrl = watch("image");
 
-	// 2. 直接監聽表單中的 maskedIndices，移除 useState
+	// --- 1. 聽寫/默寫：挖空邏輯 ---
 	const maskedIndices = watch("maskedIndices") || [];
-
-	// 3. 切換挖空狀態直接操作 form value
 	const toggleMask = (index: number) => {
 		let newIndices: number[];
 		if (maskedIndices.includes(index)) {
@@ -64,9 +63,38 @@ export function CardForm({
 		} else {
 			newIndices = [...maskedIndices, index].sort((a, b) => a - b);
 		}
-		// 這會觸發 watch 更新，自動重繪 UI，不會造成迴圈
 		setValue("maskedIndices", newIndices, { shouldDirty: true });
 	};
+
+	// --- 2. 選擇題：正確答案設定邏輯 ---
+	const currentAnswer = watch("answer");
+	const opt1 = watch("option1");
+	const opt2 = watch("option2");
+	const opt3 = watch("option3");
+	const opt4 = watch("option4");
+
+	const setCorrectOption = (optIndex: number) => {
+		const fieldName = `option${optIndex}` as keyof DeckEditorFormData;
+		const val = watch(fieldName);
+
+		// ▼▼▼ 修正 1：嚴格檢查型別與空值，解決 TS 錯誤 ▼▼▼
+		if (typeof val !== "string" || !val) {
+			return toast.error("請先輸入選項內容");
+		}
+
+		setValue("answer", val, { shouldDirty: true });
+		toast.success(`已設定 (${["A", "B", "C", "D"][optIndex - 1]}) 為正確答案`);
+	};
+
+	// 判斷哪個是正確答案 (用於 UI 顯示)
+	const getCorrectIndex = () => {
+		if (currentAnswer === opt1 && opt1) return 1;
+		if (currentAnswer === opt2 && opt2) return 2;
+		if (currentAnswer === opt3 && opt3) return 3;
+		if (currentAnswer === opt4 && opt4) return 4;
+		return 0; // 未選
+	};
+	const correctIndex = getCorrectIndex();
 
 	return (
 		<form
@@ -87,7 +115,7 @@ export function CardForm({
 					<TabsTrigger value="flashcard">單字卡</TabsTrigger>
 				</TabsList>
 
-				{/* 1. 國字注音 */}
+				{/* 1. 國字注音 Content */}
 				<TabsContent value="term" className="space-y-4">
 					<div className="grid gap-4 sm:grid-cols-2">
 						<div className="space-y-2">
@@ -116,7 +144,7 @@ export function CardForm({
 					</div>
 				</TabsContent>
 
-				{/* 2. 聽寫/默寫 */}
+				{/* 2. 聽寫/默寫 Content */}
 				<TabsContent value="dictation" className="space-y-4">
 					<div className="p-3 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 text-sm rounded-md mb-4">
 						💡 提示：點擊下方的方塊可切換 <b>顯示/挖空</b>
@@ -191,6 +219,7 @@ export function CardForm({
 										setValue(
 											"maskedIndices",
 											stem.split("").map((_, i) => i),
+											{ shouldDirty: true },
 										)
 									}
 								>
@@ -201,7 +230,9 @@ export function CardForm({
 									variant="ghost"
 									size="sm"
 									className="text-xs h-6"
-									onClick={() => setValue("maskedIndices", [])}
+									onClick={() =>
+										setValue("maskedIndices", [], { shouldDirty: true })
+									}
 								>
 									全顯示
 								</Button>
@@ -210,29 +241,72 @@ export function CardForm({
 					)}
 				</TabsContent>
 
-				{/* 3. 選擇題 */}
+				{/* 3. 選擇題 Content */}
 				<TabsContent value="choice" className="space-y-4">
 					<div className="space-y-2">
-						<Label>題目問題</Label>
-						<Input placeholder="問題描述..." {...register("stem")} />
+						<div className="flex justify-between items-center">
+							<Label>題目 (支援 Markdown 表格)</Label>
+							<SmartPasteDialog
+								onParsed={(data) => {
+									setValue("stem", data.stem, { shouldDirty: true });
+									setValue("definition", data.definition, {
+										shouldDirty: true,
+									});
+									setValue("option1", data.options[0], { shouldDirty: true });
+									setValue("option2", data.options[1], { shouldDirty: true });
+									setValue("option3", data.options[2], { shouldDirty: true });
+									setValue("option4", data.options[3], { shouldDirty: true });
+
+									// 設定答案
+									if (data.correctIndex >= 0) {
+										setTimeout(() => {
+											const ansText = data.options[data.correctIndex];
+											setValue("answer", ansText, { shouldDirty: true });
+										}, 0);
+									}
+									toast.success("智慧貼上成功！");
+								}}
+							/>
+						</div>
+						{/* ▼▼▼ 修正 4：優化 Tailwind Class ▼▼▼ */}
+						<Textarea
+							placeholder="輸入題目..."
+							className="font-mono text-sm min-h-20"
+							{...register("stem")}
+						/>
 					</div>
-					<div className="grid gap-4 sm:grid-cols-2">
-						<div className="space-y-2">
-							<Label className="text-emerald-600 font-bold">正確答案</Label>
-							<Input {...register("answer")} />
-						</div>
-						<div className="space-y-2">
-							<Label>選項 1</Label>
-							<Input {...register("option1")} />
-						</div>
-						<div className="space-y-2">
-							<Label>選項 2</Label>
-							<Input {...register("option2")} />
-						</div>
-						<div className="space-y-2">
-							<Label>選項 3</Label>
-							<Input {...register("option3")} />
-						</div>
+
+					<div className="grid gap-3">
+						<Label>選項與答案</Label>
+						{/* 渲染 4 個選項輸入框 */}
+						{[1, 2, 3, 4].map((idx) => (
+							<div key={idx} className="flex gap-2 items-center">
+								{/* ▼▼▼ 修正 2：改用 button 避免 Biome 報錯 ▼▼▼ */}
+								<button
+									type="button"
+									className={cn(
+										"w-8 h-8 flex items-center justify-center rounded-full border font-bold text-sm shrink-0 cursor-pointer transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary",
+										correctIndex === idx
+											? "bg-emerald-500 text-white border-emerald-600"
+											: "bg-slate-100 text-slate-500 hover:bg-slate-200 dark:bg-slate-800",
+									)}
+									onClick={() => setCorrectOption(idx)}
+									title="點擊設為正確答案"
+								>
+									{["A", "B", "C", "D"][idx - 1]}
+								</button>
+								{/* ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲ */}
+
+								<Input
+									{...register(`option${idx}` as keyof DeckEditorFormData)}
+									placeholder={`選項 ${["A", "B", "C", "D"][idx - 1]}`}
+									className={cn(
+										correctIndex === idx &&
+											"border-emerald-500 ring-1 ring-emerald-500",
+									)}
+								/>
+							</div>
+						))}
 					</div>
 				</TabsContent>
 
@@ -278,12 +352,13 @@ export function CardForm({
 				</TabsContent>
 			</Tabs>
 
+			{/* 共用欄位：釋義與圖片 */}
 			<div className="grid gap-4 sm:grid-cols-2">
 				<div className="space-y-2">
-					<Label>釋義 / 筆記</Label>
+					<Label>釋義 / 解析</Label>
 					<Textarea
 						className="min-h-[120px] font-mono text-sm"
-						placeholder="輸入詳細解釋..."
+						placeholder="輸入詳細解釋或筆記..."
 						{...register("definition")}
 					/>
 				</div>
@@ -292,7 +367,7 @@ export function CardForm({
 					<Label>配圖 (選填)</Label>
 					<ImageUploader
 						value={imageUrl}
-						onChange={(url) => setValue("image", url)}
+						onChange={(url) => setValue("image", url, { shouldDirty: true })}
 						disabled={saving}
 					/>
 				</div>

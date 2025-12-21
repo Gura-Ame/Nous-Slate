@@ -82,13 +82,15 @@ export function QuizFeedback({
 					<XCircle className="h-6 w-6" /> 錯誤
 				</div>
 
-				<div className="flex flex-col items-center gap-2 p-4 bg-slate-100 dark:bg-slate-900 rounded-lg w-full">
-					<span className="text-sm text-slate-500 font-medium">正確答案</span>
-					{renderCorrectAnswer()}
-					<p className="text-sm text-muted-foreground mt-2">
-						{card.content.meaning}
-					</p>
-				</div>
+				{card.type !== "choice" && (
+					<div className="flex flex-col items-center gap-2 p-4 bg-slate-100 dark:bg-slate-900 rounded-lg w-full">
+						<span className="text-sm text-slate-500 font-medium">正確答案</span>
+						{renderCorrectAnswer()}
+						<p className="text-sm text-muted-foreground mt-2">
+							{card.content.meaning}
+						</p>
+					</div>
+				)}
 
 				<Button
 					onClick={onNext}

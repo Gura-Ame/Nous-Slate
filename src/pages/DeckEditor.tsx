@@ -130,10 +130,13 @@ export default function DeckEditor() {
 						zhuyin: bopomofoList[index] || parseOneBopomofo(""),
 					}));
 				} else if (data.type === "choice") {
-					content.answer = data.answer;
-					content.options = [data.option1, data.option2, data.option3].filter(
-						Boolean,
-					);
+					content.answer = data.answer; // 這應該要是正確選項的文字
+					content.options = [
+						data.option1,
+						data.option2,
+						data.option3,
+						data.option4, // 新增
+					].filter(Boolean); // 過濾掉空字串
 				} else if (data.type === "fill_blank") {
 					content.answer = data.answer;
 				}
@@ -199,6 +202,7 @@ export default function DeckEditor() {
 			formData.option1 = content.options?.[0] || "";
 			formData.option2 = content.options?.[1] || "";
 			formData.option3 = content.options?.[2] || "";
+			formData.option4 = content.options?.[3] || "";
 		} else if (card.type === "fill_blank") {
 			formData.answer = content.answer;
 		}
@@ -259,6 +263,10 @@ export default function DeckEditor() {
 							definition={form.watch("definition")}
 							audioUrl={form.watch("audioUrl")}
 							image={form.watch("image")}
+							answer={form.watch("answer")}
+							option1={form.watch("option1")}
+							option2={form.watch("option2")}
+							option3={form.watch("option3")}
 						/>
 
 						<CardForm
