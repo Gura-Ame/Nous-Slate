@@ -1,5 +1,6 @@
 import { Volume2 } from "lucide-react";
 import { CharacterBlock } from "@/components/quiz/CharacterBlock";
+import { FirestoreImage } from "@/components/shared/FirestoreImage";
 import { MarkdownDisplay } from "@/components/shared/MarkdownDisplay";
 import { Button } from "@/components/ui/button";
 import type { CardType } from "@/types/schema";
@@ -37,7 +38,7 @@ export function CardPreview({
 		<div className="p-8 border-2 border-dashed rounded-xl bg-slate-100/50 dark:bg-slate-800/50 flex flex-col gap-6 justify-center min-h-60 items-center w-full">
 			{/* 圖片區 */}
 			{image && (
-				<img
+				<FirestoreImage // 改用這個
 					src={image}
 					alt="Preview"
 					className="max-h-40 rounded-lg shadow-sm object-contain"

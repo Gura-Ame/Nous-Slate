@@ -4,6 +4,7 @@ import { DictationMode } from "@/components/quiz/modes/DictationMode";
 import { FillMode } from "@/components/quiz/modes/FillMode";
 import { FlashcardMode } from "@/components/quiz/modes/FlashcardMode";
 import { TermMode } from "@/components/quiz/modes/TermMode";
+import { FirestoreImage } from "@/components/shared/FirestoreImage";
 import { MarkdownDisplay } from "@/components/shared/MarkdownDisplay";
 import type { Grade } from "@/lib/srs-algo";
 import { speak } from "@/lib/tts";
@@ -31,7 +32,7 @@ export function QuizArea({ card, status, onAnswer }: QuizAreaProps) {
 				{/* 圖片 */}
 				{card.content.image && (
 					<div className="relative mb-6 rounded-2xl overflow-hidden border bg-white dark:bg-slate-900 shadow-md">
-						<img
+						<FirestoreImage // 改用這個
 							src={card.content.image}
 							alt="Quiz"
 							className="max-h-[40vh] w-auto object-contain"

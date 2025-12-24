@@ -55,6 +55,8 @@ export function DeckCard({
 	onToggleSelect,
 }: DeckCardProps) {
 	return (
+		// biome-ignore lint/a11y/useKeyWithClickEvents: 此容器包含其他按鈕，無法轉為語意化 button，僅用於選取模式
+		// biome-ignore lint/a11y/noStaticElementInteractions: 此容器包含其他按鈕，無法轉為語意化 button
 		<div
 			className={cn(
 				"relative group transition-all duration-300 ease-out hover:-translate-y-1 cursor-default",

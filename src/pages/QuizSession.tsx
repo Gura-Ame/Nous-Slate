@@ -83,6 +83,7 @@ export default function QuizSession() {
 			ref={containerRef}
 			// 這裡使用 flex-col 讓 Header 與 Main 上下排列
 			className="h-screen flex flex-col bg-slate-50 dark:bg-slate-950 cursor-default outline-none overflow-hidden"
+			// biome-ignore lint/a11y/noNoninteractiveTabindex: 必須聚焦以捕獲全域鍵盤事件 (Enter 換題)
 			tabIndex={0}
 		>
 			{/* Header 高度固定，不會浮動在內容上方 */}

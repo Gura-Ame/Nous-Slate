@@ -1,5 +1,6 @@
 import { Volume2 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { FirestoreImage } from "@/components/shared/FirestoreImage";
 import { Button } from "@/components/ui/button";
 import { speak } from "@/lib/tts";
 import { cn } from "@/lib/utils";
@@ -84,7 +85,7 @@ export function FlashcardMode({ card, status, onRate }: FlashcardModeProps) {
 				>
 					{card.content.image ? (
 						<>
-							<img
+							<FirestoreImage // 改用這個
 								src={card.content.image}
 								alt="Flashcard"
 								className="h-32 w-auto object-contain mb-4 rounded-md"

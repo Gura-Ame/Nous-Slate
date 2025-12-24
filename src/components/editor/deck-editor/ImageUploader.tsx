@@ -1,6 +1,7 @@
 import { Loader2, Upload, X } from "lucide-react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
+import { FirestoreImage } from "@/components/shared/FirestoreImage";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { StorageService } from "@/services/storage-service";
@@ -81,7 +82,7 @@ export function ImageUploader({
 			{/* 預覽區 (如果有圖片) */}
 			{value ? (
 				<div className="relative w-full h-48 rounded-lg border overflow-hidden group bg-slate-100 dark:bg-slate-800">
-					<img
+					<FirestoreImage // 改用這個
 						src={value}
 						alt="Uploaded content"
 						className="w-full h-full object-contain"

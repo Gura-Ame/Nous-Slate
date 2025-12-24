@@ -15,16 +15,16 @@ export const TextParser = {
 			.map((l) => l.trim())
 			.filter(Boolean);
 
-		let stemLines: string[] = [];
+		const stemLines: string[] = [];
 		const options: [string, string, string, string] = ["", "", "", ""];
-		let definitionLines: string[] = [];
+		const definitionLines: string[] = [];
 		let correctIndex = -1;
 
 		let state = 0; // 0=題目, 1=選項, 2=解析
 
-		const optionStartRegex = /^[\(（\[]?[A-Da-d][\)）\]\.][:：]?\s*/;
+		const optionStartRegex = /^[(（[]?[A-Da-d][)）\].][:：]?\s*/;
 		const ansLineRegex =
-			/^(?:答案|Ans|ANS|Answer)[:：]?\s*[\(（\[]?([A-Da-d])[\)）\]]?/;
+			/^(?:答案|Ans|ANS|Answer)[:：]?\s*[(（[]?([A-Da-d])[)）\]]?/;
 		const defLineRegex = /^(?:解析|詳解|說明|釋義|Explanation)[:：]/;
 
 		for (const line of lines) {
