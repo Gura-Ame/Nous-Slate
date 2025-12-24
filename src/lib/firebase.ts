@@ -4,6 +4,7 @@ import { initializeApp } from "firebase/app";
 import {
 	initializeAppCheck,
 	ReCaptchaEnterpriseProvider,
+	ReCaptchaV3Provider,
 } from "firebase/app-check";
 import { GoogleAuthProvider, getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
@@ -34,7 +35,7 @@ if (typeof window !== "undefined") {
 	}
 
 	initializeAppCheck(app, {
-		provider: new ReCaptchaEnterpriseProvider(env.VITE_RECAPTCHA_SITE_KEY),
+		provider: new ReCaptchaV3Provider(env.VITE_RECAPTCHA_SITE_KEY),
 		isTokenAutoRefreshEnabled: true,
 	});
 }
