@@ -14,10 +14,15 @@ export function FillMode({ card, status, onSubmit }: FillModeProps) {
 	const inputRef = useRef<HTMLInputElement>(null);
 
 	// 1. 初始化
-	useEffect(() => {
-		// 只有當「題目ID」改變時才清空，這樣答對/答錯時文字會保留
+	const [prevCardId, setPrevCardId] = useState(card.id);
+	
+	// 1. 初始化
+	if (card.id !== prevCardId) {
+		setPrevCardId(card.id);
 		setInput("");
+	}
 
+	useEffect(() => {
 		// 自動 Focus
 		if (status === "question") {
 			setTimeout(() => inputRef.current?.focus(), 50);

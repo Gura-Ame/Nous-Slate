@@ -27,6 +27,7 @@ export const googleProvider = new GoogleAuthProvider();
 if (typeof window !== "undefined") {
 	if (location.hostname === "localhost") {
 		// biome-ignore lint/suspicious/noExplicitAny: Firebase debug token requires global var
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		(self as any).FIREBASE_APPCHECK_DEBUG_TOKEN = true;
 	}
 

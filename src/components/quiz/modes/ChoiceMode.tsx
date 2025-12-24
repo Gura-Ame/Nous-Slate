@@ -1,5 +1,5 @@
 import { Lightbulb } from "lucide-react"; // 引入燈泡圖示
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import { MarkdownDisplay } from "@/components/shared/MarkdownDisplay";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -23,20 +23,17 @@ interface ChoiceModeProps {
 const keyMap: Record<string, number> = { A: 0, B: 1, C: 2, D: 3 };
 
 export function ChoiceMode({ card, status, onSubmit }: ChoiceModeProps) {
-	const [shuffledOptions, setShuffledOptions] = useState<string[]>([]);
-
-	useEffect(() => {
+	const shuffledOptions = useMemo(() => {
 		const answer = card.content.answer || "";
 		const options = card.content.options || [];
 
 		// 如果 options 陣列裡已經包含答案，代表這是我們新存的 [A, B, C, D]
 		if (options.includes(answer)) {
-			setShuffledOptions(options); // 不洗牌，直接用
-		} else {
-			// 舊格式 (options 是干擾項)，需要合併後洗牌
-			const opts = [answer, ...options];
-			setShuffledOptions(shuffleArray(opts));
+			return options; // 不洗牌，直接用
 		}
+		// 舊格式 (options 是干擾項)，需要合併後洗牌
+		const opts = [answer, ...options];
+		return shuffleArray(opts);
 	}, [card.content.answer, card.content.options]);
 
 	const handleSelect = useCallback(

@@ -5,9 +5,10 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
 
-interface UserAuthFormProps extends React.HTMLAttributes<HTMLDivElement> {}
-
-export function UserAuthForm({ className, ...props }: UserAuthFormProps) {
+export function UserAuthForm({
+	className,
+	...props
+}: React.HTMLAttributes<HTMLDivElement>) {
 	const { loginWithGoogle } = useAuth();
 	const [isLoading, setIsLoading] = React.useState<boolean>(false);
 
@@ -16,7 +17,8 @@ export function UserAuthForm({ className, ...props }: UserAuthFormProps) {
 		try {
 			await loginWithGoogle();
 			// 登入成功後，Router 會自動導向
-		} catch (_error) {
+		} catch (error) {
+			console.error(error);
 			toast.error("登入失敗，請稍後再試");
 		} finally {
 			setIsLoading(false);

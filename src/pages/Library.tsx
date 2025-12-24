@@ -120,7 +120,8 @@ export default function Library() {
 				await SubService.subscribe(user.uid, deck);
 				toast.success("已收藏題庫");
 			}
-		} catch (_e) {
+		} catch (error) {
+			console.error(error);
 			toast.error("操作失敗");
 		}
 	};

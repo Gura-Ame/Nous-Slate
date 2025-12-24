@@ -125,7 +125,8 @@ export function DeckDialog({
 			}
 			onOpenChange(false);
 			onSuccess();
-		} catch (_error) {
+		} catch (error) {
+			console.error(error);
 			toast.error(isEditMode ? "更新失敗" : "建立失敗");
 		} finally {
 			setIsSubmitting(false);

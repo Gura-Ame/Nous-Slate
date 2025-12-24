@@ -61,7 +61,8 @@ export function CreateDeckDialog({ onDeckCreated }: Props) {
 			setOpen(false);
 			reset();
 			onDeckCreated(); // 觸發列表更新
-		} catch (_error) {
+		} catch (error) {
+			console.error(error);
 			toast.error("建立失敗", {
 				description: "請稍後再試。",
 			});

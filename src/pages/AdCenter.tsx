@@ -1,5 +1,5 @@
 import { Coins, Heart, Target, Tv } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -27,15 +27,21 @@ export default function AdCenter() {
 	const [adTitle, setAdTitle] = useState("");
 	const [adBid, setAdBid] = useState(10);
 	const [adTags, setAdTags] = useState("");
+    
+    // Prevent state updates on unmounted component
+    const isMounted = useRef(true);
+    useEffect(() => {
+        return () => { isMounted.current = false; };
+    }, []);
 
 	const refreshData = useCallback(async () => {
 		if (user) {
 			const p = await PointsService.getUserProfile(user.uid);
-			setProfile(p);
+			if (isMounted.current) setProfile(p);
 			const recommended = await AdService.getRecommendedAds(user.uid);
-			setAds(recommended);
+			if (isMounted.current) setAds(recommended);
 		}
-	}, [user]);
+	}, [user?.uid]);
 
 	useEffect(() => {
 		refreshData();

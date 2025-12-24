@@ -30,10 +30,12 @@ export function ImportJsonDialog({ deckId, onSuccess }: ImportJsonDialogProps) {
 		setIsImporting(true);
 		try {
 			// biome-ignore lint/suspicious/noExplicitAny: JSON.parse returns any
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 			let data: any[];
 			try {
 				data = JSON.parse(jsonInput);
-			} catch (_e) {
+			} catch (error) {
+				console.error(error);
 				throw new Error("JSON 格式錯誤，請檢查語法");
 			}
 

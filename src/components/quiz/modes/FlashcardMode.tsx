@@ -17,14 +17,20 @@ export function FlashcardMode({ card, status, onRate }: FlashcardModeProps) {
 	const [isFlipped, setIsFlipped] = useState(false);
 	const { autoPlayAudio } = useSettingsStore();
 
-	useEffect(() => {
+	// 1. 重置與音效邏輯
+	// 使用 pattern: Reset state when prop changes during render
+	const [prevCardId, setPrevCardId] = useState(card.id);
+	if (card.id !== prevCardId) {
+		setPrevCardId(card.id);
 		setIsFlipped(false);
+	}
 
+	useEffect(() => {
+		// 狀態改變時的音效播放 (保持在 Effect)
 		if (status === "question" && autoPlayAudio) {
-			// 稍微延遲一點點，體驗比較好
 			const timer = setTimeout(() => {
 				if (card.content.audioUrl) {
-					new Audio(card.content.audioUrl).play().catch(() => {}); // catch 避免瀏覽器阻擋自動播放
+					new Audio(card.content.audioUrl).play().catch(() => {});
 				} else {
 					speak(card.content.stem);
 				}

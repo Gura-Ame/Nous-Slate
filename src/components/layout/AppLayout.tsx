@@ -21,34 +21,33 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
 
-export function AppLayout() {
-	const { pathname } = useLocation();
-	const { user, loading, logout } = useAuth();
-	const [open, setOpen] = useState(false);
+const NAV_ITEMS = [
+	{ href: "/", label: "儀表板", icon: LayoutDashboard },
+	{ href: "/library", label: "探索題庫", icon: Library },
+	{ href: "/editor", label: "創作後台", icon: PenTool },
+	{ href: "/settings", label: "設定", icon: Settings },
+	{ href: "/ad-center", label: "積分中心", icon: Coins },
+	{ href: "/review", label: "今日複習", icon: BrainCircuit },
+];
 
-	if (loading) {
-		return (
-			<div className="h-screen w-full flex items-center justify-center bg-background text-foreground">
-				Loading...
-			</div>
-		);
-	}
+interface NavContentProps {
+	pathname: string;
+	onItemClick?: () => void;
+	user: {
+		photoURL: string | null;
+		displayName: string | null;
+	} | null;
+	onLogout: () => void;
+}
 
-	if (!user) {
-		return <Navigate to="/login" replace />;
-	}
-
-	const navItems = [
-		{ href: "/", label: "儀表板", icon: LayoutDashboard },
-		{ href: "/library", label: "探索題庫", icon: Library },
-		{ href: "/editor", label: "創作後台", icon: PenTool },
-		{ href: "/settings", label: "設定", icon: Settings },
-		{ href: "/ad-center", label: "積分中心", icon: Coins },
-		{ href: "/review", label: "今日複習", icon: BrainCircuit },
-	];
-
-	const NavContent = () => (
-		// 側邊欄背景：淺色時全白，深色時深灰 (slate-950)
+function NavContent({
+	pathname,
+	onItemClick,
+	user,
+	onLogout,
+}: NavContentProps) {
+	// 側邊欄背景：淺色時全白，深色時深灰 (slate-950)
+	return (
 		<div className="flex flex-col h-full bg-white dark:bg-slate-950 text-foreground transition-colors duration-300">
 			{/* Logo 區域 */}
 			<div className="h-20 flex items-center px-6 shrink-0">
@@ -64,14 +63,14 @@ export function AppLayout() {
 
 			{/* 選單區域 */}
 			<nav className="flex-1 px-4 mt-2 space-y-2 overflow-y-auto">
-				{navItems.map((item) => {
+				{NAV_ITEMS.map((item) => {
 					const Icon = item.icon;
 					const isActive = pathname === item.href;
 					return (
 						<Link
 							key={item.href}
 							to={item.href}
-							onClick={() => setOpen(false)}
+							onClick={onItemClick}
 							className={cn(
 								// Hover 動畫：hover 時背景變色 + 文字右移 (translate-x-1)
 								"flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-200 group font-medium text-sm relative overflow-hidden",
@@ -125,7 +124,7 @@ export function AppLayout() {
 							</p>
 							<button
 								type="button"
-								onClick={logout}
+								onClick={onLogout}
 								className="text-xs text-muted-foreground hover:text-red-500 flex items-center gap-1 transition-colors mt-0.5 font-medium"
 							>
 								<LogOut size={12} /> 登出
@@ -136,6 +135,24 @@ export function AppLayout() {
 			</div>
 		</div>
 	);
+}
+
+export function AppLayout() {
+	const { pathname } = useLocation();
+	const { user, loading, logout } = useAuth();
+	const [open, setOpen] = useState(false);
+
+	if (loading) {
+		return (
+			<div className="h-screen w-full flex items-center justify-center bg-background text-foreground">
+				Loading...
+			</div>
+		);
+	}
+
+	if (!user) {
+		return <Navigate to="/login" replace />;
+	}
 
 	return (
 		// 外層容器：淺色用 slate-50，深色用 black
@@ -155,16 +172,24 @@ export function AppLayout() {
 							<Menu className="h-5 w-5" />
 						</Button>
 					</SheetTrigger>
-					<SheetContent side="left" className="p-0 w-72 border-none shadow-2xl">
+					<SheetContent
+						side="left"
+						className="p-0 w-72 border-none shadow-2xl"
+					>
 						<SheetTitle className="sr-only">導覽選單</SheetTitle>
-						<NavContent />
+						<NavContent
+							pathname={pathname}
+							onItemClick={() => setOpen(false)}
+							user={user}
+							onLogout={logout}
+						/>
 					</SheetContent>
 				</Sheet>
 			</header>
 
 			{/* Desktop Sidebar */}
 			<aside className="w-64 hidden md:flex flex-col shrink-0 h-full z-50 shadow-xl shadow-slate-200/50 dark:shadow-none">
-				<NavContent />
+				<NavContent pathname={pathname} user={user} onLogout={logout} />
 			</aside>
 
 			{/* Main Content */}

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner"; // 引入 toast
 import { CharacterBlock } from "@/components/quiz/CharacterBlock";
 import { VirtualKeyboard } from "@/components/quiz/VirtualKeyboard";
@@ -18,11 +18,10 @@ export function TermMode({ card, status, onSubmit }: TermModeProps) {
 	);
 	const [focusedIndex, setFocusedIndex] = useState(0);
 
-	const lastCardIdRef = useRef(card.id);
-
 	// 1. 初始化與重置邏輯
-	if (card.id !== lastCardIdRef.current) {
-		lastCardIdRef.current = card.id;
+	const [prevCardId, setPrevCardId] = useState(card.id);
+	if (card.id !== prevCardId) {
+		setPrevCardId(card.id);
 		setUserInputs([]);
 		setFocusedIndex(0);
 	}
@@ -54,13 +53,16 @@ export function TermMode({ card, status, onSubmit }: TermModeProps) {
 		}
 	};
 
-	const checkAnswer = useCallback(
-		(finalInputs: BopomofoChar[]) => {
-			const blocks = card.content.blocks || [];
-			const normalize = (str: string) => (str === " " ? "" : str);
+	useEffect(() => {
+		const blocks = card.content.blocks || [];
+		const targetLength = blocks.length;
+		const isFilled =
+			userInputs.length === targetLength && !userInputs.includes(undefined);
 
-			const isCorrect = finalInputs.every((input, idx) => {
-				if (!blocks[idx]) return false;
+		if (status === "question" && isFilled) {
+			const normalize = (str: string) => (str === " " ? "" : str);
+			const isCorrect = userInputs.every((input, idx) => {
+				if (!blocks[idx] || !input) return false;
 				const target = blocks[idx].zhuyin;
 				const inputStr =
 					input.initial + input.medial + input.final + normalize(input.tone);
@@ -72,20 +74,11 @@ export function TermMode({ card, status, onSubmit }: TermModeProps) {
 				return inputStr === targetStr;
 			});
 			onSubmit(isCorrect);
-		},
-		[card, onSubmit],
-	);
-
-	useEffect(() => {
-		const blocks = card.content.blocks || [];
-		const targetLength = blocks.length;
-		const isFilled =
-			userInputs.length === targetLength && !userInputs.includes(undefined);
-
-		if (status === "question" && isFilled) {
-			checkAnswer(userInputs as BopomofoChar[]);
 		}
-	}, [userInputs, status, card, checkAnswer]);
+	}, [userInputs, status, card, onSubmit]);
+
+	// Fix circular dependency by using a ref for the setter
+	const setInternalBufferRef = useRef<((char: BopomofoChar) => void) | null>(null);
 
 	const {
 		displayBuffer,
@@ -113,8 +106,9 @@ export function TermMode({ card, status, onSubmit }: TermModeProps) {
 				const prevIndex = focusedIndex - 1;
 				setFocusedIndex(prevIndex);
 				const prevChar = userInputs[prevIndex];
-				if (prevChar) {
-					setInternalBuffer(prevChar);
+				if (prevChar && setInternalBufferRef.current) {
+					// Use ref to call the setter
+					setInternalBufferRef.current(prevChar);
 					setUserInputs((prev) => {
 						const newArr = [...prev];
 						newArr[prevIndex] = undefined;
@@ -124,6 +118,11 @@ export function TermMode({ card, status, onSubmit }: TermModeProps) {
 			}
 		},
 	);
+
+	// Sync the ref with the actual function returned by the hook
+	useEffect(() => {
+		setInternalBufferRef.current = setInternalBuffer;
+	}, [setInternalBuffer]);
 
 	const handleBlockClick = (index: number) => {
 		if (status !== "question") return;

@@ -137,7 +137,8 @@ export default function Editor() {
 			await DeckService.moveDeckToFolder(deckId, folderId);
 			toast.success("移動成功");
 			fetchData();
-		} catch (_e) {
+		} catch (error) {
+			console.error(error);
 			toast.error("移動失敗");
 		}
 	};
@@ -172,7 +173,8 @@ export default function Editor() {
 				toast.success("資料夾已建立");
 			}
 			fetchData();
-		} catch (_e) {
+		} catch (error) {
+			console.error(error);
 			toast.error("操作失敗");
 		}
 	};

@@ -57,7 +57,8 @@ export default function DeckEditor() {
 		try {
 			const data = await CardService.getCardsByDeck(deckId);
 			setCards(data);
-		} catch {
+		} catch (error) {
+			console.error(error);
 			toast.error("無法載入卡片列表");
 		} finally {
 			setLoading(false);
@@ -162,7 +163,8 @@ export default function DeckEditor() {
 					option3: "",
 				});
 				fetchCards();
-			} catch {
+			} catch (error) {
+				console.error(error);
 				toast.error("儲存失敗");
 			} finally {
 				setSaving(false);

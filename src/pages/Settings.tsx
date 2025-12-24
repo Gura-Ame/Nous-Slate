@@ -1,7 +1,7 @@
 import { Monitor, Moon, Sun } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { DataManagement } from "@/components/settings/DataManagement";
-import { useTheme } from "@/components/theme-provider";
+import { useTheme } from "@/components/theme-context";
 import { Button } from "@/components/ui/button";
 import {
 	Card,

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { CharacterBlock } from "@/components/quiz/CharacterBlock";
 import { MarkdownDisplay } from "@/components/shared/MarkdownDisplay";
 import { Button } from "@/components/ui/button";
@@ -14,28 +14,37 @@ interface DictationModeProps {
 export function DictationMode({ card, status, onSubmit }: DictationModeProps) {
 	// 儲存每個挖空位置的答案： { index: char }
 	const [answers, setAnswers] = useState<Record<number, string>>({});
-	const [maskedIndices, setMaskedIndices] = useState<number[]>([]);
 	const inputRefs = useRef<Record<number, HTMLInputElement | null>>({});
 
-	// 1. 初始化
-	useEffect(() => {
+	// 1. 初始化與重置
+	const [prevCardId, setPrevCardId] = useState(card.id);
+	const [prevStatus, setPrevStatus] = useState(status);
+
+	// Derived state for maskedIndices (stable for same card)
+	const maskedIndices = useMemo(() => {
 		const stemLength = card.content.stem.length;
 		const savedIndices = card.content.maskedIndices;
-		const targetIndices =
-			savedIndices && savedIndices.length > 0
-				? savedIndices
-				: Array.from({ length: stemLength }, (_, i) => i);
+		return savedIndices && savedIndices.length > 0
+			? savedIndices
+			: Array.from({ length: stemLength }, (_, i) => i);
+	}, [card.content.stem.length, card.content.maskedIndices]);
 
-		setMaskedIndices(targetIndices);
+	// Reset answers when card changes or status switches to question
+	if (card.id !== prevCardId || (status === "question" && status !== prevStatus)) {
+		setPrevCardId(card.id);
+		setPrevStatus(status);
+		setAnswers({});
+	}
 
+	// Focus effect
+	useEffect(() => {
 		if (status === "question") {
-			setAnswers({});
 			setTimeout(() => {
-				const firstIndex = targetIndices[0];
+				const firstIndex = maskedIndices[0];
 				inputRefs.current[firstIndex]?.focus();
 			}, 100);
 		}
-	}, [card, status]);
+	}, [status, maskedIndices]);
 
 	// 2. 處理輸入
 	const handleInputChange = (index: number, value: string) => {

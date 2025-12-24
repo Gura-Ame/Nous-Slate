@@ -173,7 +173,7 @@ export const PdfService = {
                     
                     ${cards
 											.map((card, index) => {
-												// @ts-expect-error
+												// @ts-expect-error: _shuffledOptions is added dynamically during print view generation
 												const opts = card._shuffledOptions || [];
 												let contentHtml = "";
 
@@ -256,7 +256,7 @@ export const PdfService = {
 												let answerText = card.content.answer || "";
 
 												if (card.type === "choice") {
-													// @ts-expect-error
+													// @ts-expect-error: _shuffledOptions is added dynamically during print view generation
 													const opts = card._shuffledOptions || [];
 													const ansIndex = opts.indexOf(
 														card.content.answer || "",

@@ -20,10 +20,10 @@ export function FirestoreImage({
 	const [error, setError] = useState(false);
 
 	useEffect(() => {
-		// 1. 如果 src 為空、undefined 或空字串，直接設為 null 並返回
+		// 1. 如果 src 為空，不處理 (直接渲染 null)
 		if (!src) {
-			setImageSrc(null);
 			setLoading(false);
+			setImageSrc(null);
 			return;
 		}
 
@@ -35,21 +35,29 @@ export function FirestoreImage({
 		}
 
 		// 3. 分片圖片載入邏輯
+		let isMounted = true;
 		setLoading(true);
 		setError(false);
 
 		StorageService.loadImage(src)
 			.then((data) => {
-				setImageSrc(data);
+				if (isMounted) setImageSrc(data);
 			})
 			.catch((err) => {
-				console.error("Image load failed", err);
-				setError(true);
+				if (isMounted) {
+					console.error("Image load failed", err);
+					setError(true);
+				}
 			})
 			.finally(() => {
-				setLoading(false);
+				if (isMounted) setLoading(false);
 			});
+			
+		return () => { isMounted = false; };
 	}, [src]);
+
+	// Early return for empty src if not loading
+	if (!src && !loading) return null;
 
 	// 錯誤狀態
 	if (error) {
