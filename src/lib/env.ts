@@ -10,6 +10,7 @@ const envSchema = z.object({
 	VITE_FIREBASE_APP_ID: z.string().min(1),
 	VITE_FIREBASE_MEASUREMENT_ID: z.string().min(1),
 	VITE_RECAPTCHA_SITE_KEY: z.string().min(1),
+	VITE_IMGBB_API_KEY: z.string().min(1, "ImgBB API Key is required"),
 });
 
 // 嘗試解析 import.meta.env
