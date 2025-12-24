@@ -1,11 +1,7 @@
 // src/lib/firebase.ts
 
 import { initializeApp } from "firebase/app";
-import {
-	initializeAppCheck,
-	ReCaptchaEnterpriseProvider,
-	ReCaptchaV3Provider,
-} from "firebase/app-check";
+import { initializeAppCheck, ReCaptchaV3Provider } from "firebase/app-check";
 import { GoogleAuthProvider, getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
