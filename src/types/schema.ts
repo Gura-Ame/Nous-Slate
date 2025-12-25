@@ -5,11 +5,11 @@ export interface Folder {
 	ownerId: string;
 	name: string;
 	createdAt: Timestamp;
-	color?: string; // 儲存 Tailwind class，例如 "bg-red-500"
-	isPublic: boolean; // 是否公開
+	color?: string; // Tailwind class, e.g., "bg-red-500"
+	isPublic: boolean; // Is it public?
 }
 
-// 1. 卡片類型 (Card)
+// 1. Card Types
 export type CardType =
 	| "char"
 	| "term"
@@ -18,7 +18,7 @@ export type CardType =
 	| "fill_blank"
 	| "flashcard";
 
-// 注音結構
+// Bopomofo Structure
 export interface BopomofoData {
 	initial: string;
 	medial: string;
@@ -27,7 +27,7 @@ export interface BopomofoData {
 }
 
 export interface CardContent {
-	stem: string; // 題目
+	stem: string; // Question stem
 
 	blocks?: {
 		char: string;
@@ -41,7 +41,7 @@ export interface CardContent {
 
 	answer?: string;
 
-	options?: string[]; // 干擾項 (選擇題用)
+	options?: string[]; // Distractors (for multiple choice)
 	maskedIndices?: number[];
 }
 
@@ -61,7 +61,7 @@ export interface Card {
 	updatedAt: Timestamp;
 }
 
-// 2. 題組類型 (Deck)
+// 2. Deck Types
 export interface Deck {
 	id: string;
 	ownerId: string;
@@ -84,7 +84,7 @@ export interface Deck {
 	updatedAt: Timestamp;
 }
 
-// 3. SRS 學習紀錄 (Review)
+// 3. SRS Review Record
 export interface Review {
 	id: string;
 	userId: string;
@@ -111,30 +111,31 @@ export interface UserProfile {
 	photoURL?: string;
 	email?: string;
 
-	points: number; // 目前積分
-	lastDailyBonus: Timestamp | null; // 上次領取每日獎勵的時間
-	interestTags: string[]; // 用於廣告推薦的興趣標籤 (根據做過的題庫累積)
-	isAdvertiser?: boolean; // 是否為廣告主
+	interestTags: string[]; // Interest tags for ad recommendation (accumulated based on decks practiced)
+	isAdvertiser?: boolean; // Is an advertiser?
+	advertiserId?: string; // If advertiser, their ID
+	points: number; // Current points
+	lastDailyBonus?: Timestamp; // Last time they claimed daily bonus
 }
 
-// 5. 廣告 (Ad)
+// 5. Ad Types
 export interface Ad {
 	id: string;
-	advertiserId: string; // 誰刊登的
+	advertiserId: string; // Published by whom
 	title: string;
-	content: string; // 廣告內容 (文字或圖片URL)
-	targetTags: string[]; // 目標受眾標籤 (e.g., "國文", "英文", "考試")
+	content: string; // Ad content (text or image URL)
+	targetTags: string[]; // Target audience tags (e.g., "Chinese", "English", "Exam")
 
-	bidPoints: number; // 廣告主願意支付的積分 (登錄時設定)
-	// 使用者看一次獲得的積分 (通常是 bidPoints 的一部分，這裡假設全給或打折)
+	bidPoints: number; // Points the advertiser is willing to pay (set during registration)
+	// Points the user gets per view (usually a part of bidPoints)
 	rewardPoints: number;
 
-	active: boolean; // 是否上架
-	views: number; // 被觀看次數
+	active: boolean; // Is it active?
+	views: number; // View count
 	createdAt: Timestamp;
 }
 
-// 6. 交易紀錄 (Transaction) - 用於帳務明細
+// 6. Transaction Record - For accounting details
 export type TransactionType =
 	| "daily_bonus"
 	| "quiz_cost"
@@ -147,16 +148,15 @@ export interface PointTransaction {
 	id: string;
 	userId: string;
 	type: TransactionType;
-	amount: number; // 正數為加分，負數為扣分
-	description: string; // e.g., "觀看廣告: Nike球鞋", "練習: 國文第一課"
+	amount: number; // Positive for addition, negative for deduction
+	description: string; // e.g., "Watch ad: Nike Shoes", "Practice: Chinese Lesson 1"
 	createdAt: Timestamp;
 }
 
 export interface Subscription {
-	id: string; // userId_deckId
 	userId: string;
 	deckId: string;
-	deckTitle: string; // 快取標題，方便列表顯示
+	deckTitle: string; // Cached title for easier list display
 	deckOwnerId: string;
 	createdAt: Timestamp;
 }

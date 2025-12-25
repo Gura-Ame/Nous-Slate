@@ -1,5 +1,5 @@
 import { X } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { GlassButton } from "@/components/ui/glass/GlassButton";
 import { Progress } from "@/components/ui/progress";
 
 interface QuizHeaderProps {
@@ -10,12 +10,20 @@ interface QuizHeaderProps {
 
 export function QuizHeader({ currentIndex, total, onExit }: QuizHeaderProps) {
 	return (
-		<header className="h-16 px-6 flex items-center justify-between border-b bg-white dark:bg-slate-900 shrink-0">
-			<Button variant="ghost" size="icon" onClick={onExit}>
+		<header className="h-16 px-6 flex items-center justify-between border-b border-white/10 bg-white/50 dark:bg-slate-900/50 backdrop-blur-md shrink-0">
+			<GlassButton
+				variant="ghost"
+				size="icon"
+				onClick={onExit}
+				aria-label="Exit Quiz"
+			>
 				<X className="h-5 w-5" />
-			</Button>
+			</GlassButton>
 			<div className="flex-1 max-w-md mx-4">
-				<Progress value={((currentIndex + 1) / total) * 100} className="h-2" />
+				<Progress
+					value={((currentIndex + 1) / total) * 100}
+					className="h-2 bg-slate-200 dark:bg-slate-800"
+				/>
 			</div>
 			<div className="text-sm font-medium text-slate-500">
 				{currentIndex + 1} / {total}

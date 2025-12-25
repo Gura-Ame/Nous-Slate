@@ -1,4 +1,5 @@
 import { Trash2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -20,6 +21,7 @@ export function CardListSidebar({
 	onSelect,
 	onDelete,
 }: CardListSidebarProps) {
+	const { t } = useTranslation();
 	return (
 		<aside className="w-80 border-r bg-white dark:bg-slate-900 flex flex-col h-full overflow-hidden">
 			<ScrollArea className="h-full">
@@ -27,18 +29,18 @@ export function CardListSidebar({
 					{loading ? (
 						Array.from({ length: 5 }).map((_, i) => (
 							<Skeleton
-								// biome-ignore lint/suspicious/noArrayIndexKey: Skeleton
-								key={`skeleton-${i}`} // 簡化 key
+								// biome-ignore lint/suspicious/noArrayIndexKey: Skeleton indices are safe here
+								key={`skeleton-${i}`} // Simplified key
 								className="h-16 w-full"
 							/>
 						))
 					) : cards.length === 0 ? (
 						<div className="text-center py-10 text-slate-400 text-sm">
-							暫無卡片
+							{t("card_list.empty", "No cards yet")}
 						</div>
 					) : (
 						cards.map((card) => (
-							// biome-ignore lint/a11y/useSemanticElements: 防止 <button> 內嵌 <button> (刪除鈕) 導致的 Hydration Error
+							// biome-ignore lint/a11y/useSemanticElements: Using div to avoid nested buttons (delete button) causing Hydration Error
 							<div
 								key={card.id}
 								role="button"
@@ -64,26 +66,27 @@ export function CardListSidebar({
 										card.type === "dictation"
 											? card.content.stem
 											: card.type === "fill_blank"
-												? "填空題"
-												: "選擇題"}
+												? t("card_list.type_fillblank", "Fill Blank")
+												: t("card_list.type_choice", "Multiple Choice")}
 									</div>
 									<div className="text-xs text-muted-foreground truncate flex gap-2 items-center">
 										<span className="uppercase text-[10px] border px-1 rounded bg-white dark:bg-slate-900 shrink-0">
 											{card.type === "term"
-												? "國"
+												? t("card_list.indicator_term", "Z")
 												: card.type === "dictation"
-													? "默"
+													? t("card_list.indicator_dictation", "D")
 													: card.type === "choice"
-														? "選"
+														? t("card_list.indicator_choice", "C")
 														: card.type === "fill_blank"
-															? "填"
-															: "英"}
+															? t("card_list.indicator_fillblank", "F")
+															: t("card_list.indicator_flashcard", "W")}
 										</span>
 										<span className="truncate max-w-[140px]">
 											{card.type === "term" ||
 											card.type === "flashcard" ||
 											card.type === "dictation"
-												? card.content.meaning || "無釋義"
+												? card.content.meaning ||
+													t("common.no_definition", "No definition")
 												: card.content.stem}
 										</span>
 									</div>
@@ -94,7 +97,7 @@ export function CardListSidebar({
 									size="icon"
 									className="opacity-0 group-hover:opacity-100 h-8 w-8 text-red-500 shrink-0 hover:bg-red-100 dark:hover:bg-red-900/30 transition-all"
 									onClick={(e) => {
-										e.stopPropagation(); // 防止觸發 onSelect
+										e.stopPropagation(); // Prevent triggering onSelect
 										onDelete(card.id);
 									}}
 								>

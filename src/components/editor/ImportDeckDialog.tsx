@@ -1,5 +1,6 @@
 import { FileJson, Loader2 } from "lucide-react";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,7 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/hooks/useAuth";
-// 重用之前的解析邏輯
+// Reuse previous parsing logic
 import { parseBopomofoString, parseOneBopomofo } from "@/lib/bopomofo-utils";
 import { CardService } from "@/services/card-service";
 import { DeckService } from "@/services/deck-service";
@@ -24,6 +25,7 @@ interface ImportDeckDialogProps {
 
 export function ImportDeckDialog({ onSuccess }: ImportDeckDialogProps) {
 	const { user } = useAuth();
+	const { t } = useTranslation();
 	const [open, setOpen] = useState(false);
 	const [jsonInput, setJsonInput] = useState("");
 	const [isImporting, setIsImporting] = useState(false);
@@ -34,12 +36,17 @@ export function ImportDeckDialog({ onSuccess }: ImportDeckDialogProps) {
 		try {
 			const data = JSON.parse(jsonInput);
 
-			// 簡單驗證格式
+			// Basic format validation
 			if (!data.title || !Array.isArray(data.cards)) {
-				throw new Error("JSON 格式錯誤：必須包含 title 和 cards 陣列");
+				throw new Error(
+					t(
+						"import.deck_error",
+						"JSON format error: must contain title and cards array",
+					),
+				);
 			}
 
-			// 1. 建立題庫
+			// 1. Create deck
 			const deckRef = await DeckService.createDeck(
 				user.uid,
 				data.title,
@@ -47,7 +54,7 @@ export function ImportDeckDialog({ onSuccess }: ImportDeckDialogProps) {
 			);
 			const newDeckId = deckRef.id;
 
-			// 如果有 tags，更新上去 (假設 createDeck 還沒支援 tags 參數)
+			// Update tags if present (assuming createDeck doesn't handle tags yet)
 			if (Array.isArray(data.tags)) {
 				await DeckService.updateDeck(newDeckId, {
 					tags: data.tags,
@@ -55,7 +62,7 @@ export function ImportDeckDialog({ onSuccess }: ImportDeckDialogProps) {
 				});
 			}
 
-			// 2. 批次建立卡片
+			// 2. Create cards batch
 			let count = 0;
 			for (const item of data.cards) {
 				if (!item.stem || !item.type) continue;
@@ -88,13 +95,16 @@ export function ImportDeckDialog({ onSuccess }: ImportDeckDialogProps) {
 				count++;
 			}
 
-			toast.success(`題庫「${data.title}」已匯入，共 ${count} 張卡片`);
+			toast.success(t("import.deck_success", { title: data.title, count }));
 			setOpen(false);
 			setJsonInput("");
 			onSuccess();
 		} catch (error: unknown) {
 			console.error(error);
-			const msg = error instanceof Error ? error.message : "匯入失敗";
+			const msg =
+				error instanceof Error
+					? error.message
+					: t("import.error", "Import failed");
 			toast.error(msg);
 		} finally {
 			setIsImporting(false);
@@ -102,22 +112,22 @@ export function ImportDeckDialog({ onSuccess }: ImportDeckDialogProps) {
 	};
 
 	const exampleJson = `{
-  "title": "匯入的題庫範例",
-  "description": "這是一個 JSON 匯入測試",
+  "title": "Import Deck Example",
+  "description": "This is a JSON import test",
   "isPublic": false,
-  "tags": ["測試", "匯入"],
+  "tags": ["test", "import"],
   "cards": [
     {
       "type": "term",
-      "stem": "銀行",
+      "stem": "Bank",
       "zhuyinRaw": "ㄧㄣˊ ㄏㄤˊ",
-      "meaning": "金融機構"
+      "meaning": "Financial Institution"
     },
     {
       "type": "choice",
-      "stem": "太陽方位？",
-      "answer": "東",
-      "options": ["西", "南", "北"]
+      "stem": "Sun direction?",
+      "answer": "East",
+      "options": ["West", "South", "North"]
     }
   ]
 }`;
@@ -126,14 +136,16 @@ export function ImportDeckDialog({ onSuccess }: ImportDeckDialogProps) {
 		<Dialog open={open} onOpenChange={setOpen}>
 			<DialogTrigger asChild>
 				<Button variant="outline" className="gap-2">
-					<FileJson className="h-4 w-4" /> 匯入題庫
+					<FileJson className="h-4 w-4" /> Import Deck
 				</Button>
 			</DialogTrigger>
 			<DialogContent className="sm:max-w-2xl max-h-[80vh] flex flex-col">
 				<DialogHeader>
-					<DialogTitle>匯入完整題庫</DialogTitle>
+					<DialogTitle>
+						{t("import.deck_title", "Import Complete Deck")}
+					</DialogTitle>
 					<DialogDescription>
-						請貼上包含 title 與 cards 的 JSON 物件。
+						Please paste the JSON object containing title and cards.
 					</DialogDescription>
 				</DialogHeader>
 				<div className="flex-1 py-4 min-h-0">
@@ -146,11 +158,11 @@ export function ImportDeckDialog({ onSuccess }: ImportDeckDialogProps) {
 				</div>
 				<div className="flex justify-end gap-2 shrink-0">
 					<Button variant="outline" onClick={() => setJsonInput(exampleJson)}>
-						載入範例
+						Load Example
 					</Button>
 					<Button onClick={handleImport} disabled={isImporting || !jsonInput}>
 						{isImporting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-						開始匯入
+						Start Import
 					</Button>
 				</div>
 			</DialogContent>

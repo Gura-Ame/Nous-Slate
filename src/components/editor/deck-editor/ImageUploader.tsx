@@ -1,5 +1,6 @@
 import { Loader2, Upload, X } from "lucide-react";
 import { useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { FirestoreImage } from "@/components/shared/FirestoreImage";
 import { Button } from "@/components/ui/button";
@@ -7,8 +8,8 @@ import { cn } from "@/lib/utils";
 import { StorageService } from "@/services/storage-service";
 
 interface ImageUploaderProps {
-	value?: string; // 目前的圖片 URL
-	onChange: (url: string) => void; // 回傳新 URL
+	value?: string; // Current image URL
+	onChange: (url: string) => void; // Callback with new URL
 	disabled?: boolean;
 }
 
@@ -17,46 +18,50 @@ export function ImageUploader({
 	onChange,
 	disabled,
 }: ImageUploaderProps) {
+	const { t } = useTranslation();
 	const [isUploading, setIsUploading] = useState(false);
 	const [isDragging, setIsDragging] = useState(false);
 	const fileInputRef = useRef<HTMLInputElement>(null);
 
-	// 核心上傳處理
+	// Core upload handling
 	const handleUpload = async (file: File) => {
 		setIsUploading(true);
 		try {
 			const url = await StorageService.uploadImage(file);
 			onChange(url);
-			toast.success("圖片上傳成功");
+			toast.success(t("image_uploader.success", "Image uploaded successfully"));
 		} catch (error: unknown) {
 			console.error(error);
-			const msg = error instanceof Error ? error.message : "上傳失敗";
+			const msg =
+				error instanceof Error
+					? error.message
+					: t("image_uploader.error", "Upload failed");
 			toast.error(msg);
 		} finally {
 			setIsUploading(false);
 		}
 	};
 
-	// 1. 處理檔案選擇
+	// 1. Handle file selection
 	const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const file = e.target.files?.[0];
 		if (file) handleUpload(file);
 	};
 
-	// 2. 處理剪貼簿貼上 (Paste)
+	// 2. Handle clipboard paste
 	const handlePaste = (e: React.ClipboardEvent) => {
 		const items = e.clipboardData.items;
 		for (let i = 0; i < items.length; i++) {
 			if (items[i].type.indexOf("image") !== -1) {
-				e.preventDefault(); // 阻止貼上文字
+				e.preventDefault(); // Prevent pasting text
 				const file = items[i].getAsFile();
 				if (file) handleUpload(file);
-				return; // 只處理第一張圖
+				return; // Only process the first image
 			}
 		}
 	};
 
-	// 3. 處理拖曳 (Drag & Drop)
+	// 3. Handle drag and drop
 	const handleDragOver = (e: React.DragEvent) => {
 		e.preventDefault();
 		setIsDragging(true);
@@ -71,7 +76,7 @@ export function ImageUploader({
 		}
 	};
 
-	// 移除圖片
+	// Remove image
 	const handleRemove = () => {
 		onChange("");
 		if (fileInputRef.current) fileInputRef.current.value = "";
@@ -79,10 +84,10 @@ export function ImageUploader({
 
 	return (
 		<div className="space-y-2">
-			{/* 預覽區 (如果有圖片) */}
+			{/* Preview Area (if image exists) */}
 			{value ? (
 				<div className="relative w-full h-48 rounded-lg border overflow-hidden group bg-slate-100 dark:bg-slate-800">
-					<FirestoreImage // 改用這個
+					<FirestoreImage // Use this for chunked images
 						src={value}
 						alt="Uploaded content"
 						className="w-full h-full object-contain"
@@ -117,14 +122,18 @@ export function ImageUploader({
 					{isUploading ? (
 						<div className="flex flex-col items-center gap-2 text-slate-500">
 							<Loader2 className="h-8 w-8 animate-spin" />
-							<span className="text-xs">上傳中...</span>
+							<span className="text-xs">
+								{t("common.loading", "Loading...")}
+							</span>
 						</div>
 					) : (
 						<div className="flex flex-col items-center gap-2 text-slate-400">
 							<Upload className="h-8 w-8" />
-							<p className="text-xs font-medium">
-								點擊上傳、拖曳檔案，或是{" "}
-								<span className="text-primary font-bold">Ctrl+V</span> 貼上
+							<p className="text-xs font-medium px-4 text-center">
+								{t(
+									"image_uploader.hint",
+									"Click to upload, drag and drop, or Ctrl+V to paste",
+								)}
 							</p>
 						</div>
 					)}

@@ -14,7 +14,7 @@ import type { Ad } from "@/types/schema";
 import { PointsService } from "./points-service";
 
 export const AdService = {
-	// 1. 廣告主登錄廣告
+	// 1. Advertiser registers an ad
 	registerAd: async (
 		advertiserId: string,
 		data: Omit<Ad, "id" | "advertiserId" | "active" | "views" | "createdAt">,
@@ -28,28 +28,28 @@ export const AdService = {
 		});
 	},
 
-	// 2. 獲取推薦廣告 (演算法核心)
+	// 2. Get recommended ads (Algorithm core)
 	getRecommendedAds: async (userId: string): Promise<Ad[]> => {
-		// 取得使用者興趣
+		// Get user interests
 		const userProfile = await PointsService.getUserProfile(userId);
 		const userInterests = userProfile?.interestTags || [];
 
-		// 取得所有啟用中的廣告
+		// Get all active ads
 		const q = query(collection(db, "ads"), where("active", "==", true));
 		const snap = await getDocs(q);
 		const allAds = snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Ad);
 
-		// --- 推薦演算法 (Client Side) ---
-		// 分數計算：基礎分 (Bid Price) + 興趣加權
+		// --- Recommendation Algorithm (Client Side) ---
+		// Score calculation: Base score (Bid Price) + Interest weighting
 		const scoredAds = allAds.map((ad) => {
-			let score = ad.bidPoints; // 錢出越多的排越前面
+			let score = ad.bidPoints; // Higher bid ranks higher
 
-			// 計算興趣重疊
+			// Calculate interest overlap
 			const matchCount = ad.targetTags.filter((tag) =>
 				userInterests.includes(tag),
 			).length;
 
-			// 每個命中標籤加權 20%
+			// 20% weight for each matching tag
 			if (matchCount > 0) {
 				score = score * (1 + matchCount * 0.2);
 			}
@@ -57,23 +57,23 @@ export const AdService = {
 			return { ad, score };
 		});
 
-		// 排序並回傳
+		// Sort and return
 		return scoredAds.sort((a, b) => b.score - a.score).map((item) => item.ad);
 	},
 
-	// 3. 觀看廣告領獎
+	// 3. Watch ad reward
 	watchAd: async (userId: string, ad: Ad) => {
-		// 廣告瀏覽數 +1
+		// Increment ad view count
 		await updateDoc(doc(db, "ads", ad.id), {
 			views: increment(1),
 		});
 
-		// 使用者加分
+		// Reward user points
 		await PointsService.updatePoints(
 			userId,
 			ad.rewardPoints,
 			"watch_ad",
-			`觀看廣告：${ad.title}`,
+			`Watched Ad: ${ad.title}`,
 		);
 	},
 };

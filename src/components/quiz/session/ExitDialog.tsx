@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -16,22 +17,28 @@ interface ExitDialogProps {
 }
 
 export function ExitDialog({ open, onOpenChange, onConfirm }: ExitDialogProps) {
+	const { t } = useTranslation();
 	return (
 		<AlertDialog open={open} onOpenChange={onOpenChange}>
 			<AlertDialogContent>
 				<AlertDialogHeader>
-					<AlertDialogTitle>確定要退出練習嗎？</AlertDialogTitle>
+					<AlertDialogTitle>
+						{t("quiz.exit.title", "Are you sure you want to exit?")}
+					</AlertDialogTitle>
 					<AlertDialogDescription>
-						本次練習的進度將不會保留。SRS 記憶數據已經即時存檔。
+						{t(
+							"quiz.exit.desc",
+							"Progress for this session will not be saved. SRS data is saved in real-time.",
+						)}
 					</AlertDialogDescription>
 				</AlertDialogHeader>
 				<AlertDialogFooter>
-					<AlertDialogCancel>取消</AlertDialogCancel>
+					<AlertDialogCancel>{t("common.cancel", "Cancel")}</AlertDialogCancel>
 					<AlertDialogAction
 						onClick={onConfirm}
 						className="bg-destructive hover:bg-destructive/90"
 					>
-						退出
+						{t("quiz.exit.confirm", "Exit")}
 					</AlertDialogAction>
 				</AlertDialogFooter>
 			</AlertDialogContent>

@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { CharacterBlock } from "@/components/quiz/CharacterBlock";
 import { MarkdownDisplay } from "@/components/shared/MarkdownDisplay";
-import { Button } from "@/components/ui/button";
+
+import { GlassButton } from "@/components/ui/glass/GlassButton";
+import { GlassCard } from "@/components/ui/glass/GlassCard";
 import { cn } from "@/lib/utils";
 import type { Card } from "@/types/schema";
 
@@ -12,11 +15,12 @@ interface DictationModeProps {
 }
 
 export function DictationMode({ card, status, onSubmit }: DictationModeProps) {
-	// 儲存每個挖空位置的答案： { index: char }
+	const { t } = useTranslation();
+	// Stores answers for each masked index: { index: char }
 	const [answers, setAnswers] = useState<Record<number, string>>({});
 	const inputRefs = useRef<Record<number, HTMLInputElement | null>>({});
 
-	// 1. 初始化與重置
+	// 1. Init & Reset
 	const [prevCardId, setPrevCardId] = useState(card.id);
 	const [prevStatus, setPrevStatus] = useState(status);
 
@@ -30,7 +34,10 @@ export function DictationMode({ card, status, onSubmit }: DictationModeProps) {
 	}, [card.content.stem.length, card.content.maskedIndices]);
 
 	// Reset answers when card changes or status switches to question
-	if (card.id !== prevCardId || (status === "question" && status !== prevStatus)) {
+	if (
+		card.id !== prevCardId ||
+		(status === "question" && status !== prevStatus)
+	) {
 		setPrevCardId(card.id);
 		setPrevStatus(status);
 		setAnswers({});
@@ -46,9 +53,9 @@ export function DictationMode({ card, status, onSubmit }: DictationModeProps) {
 		}
 	}, [status, maskedIndices]);
 
-	// 2. 處理輸入
+	// 2. Handle Input
 	const handleInputChange = (index: number, value: string) => {
-		// 限制只能輸入一個字，且過濾掉注音符號 (簡單防呆)
+		// Limit to 1 char, strict non-zhuyin filtering could be done here
 		const char = value.slice(-1);
 
 		setAnswers((prev) => ({
@@ -90,8 +97,8 @@ export function DictationMode({ card, status, onSubmit }: DictationModeProps) {
 	const blocks = card.content.blocks || [];
 
 	return (
-		<div className="flex flex-col items-center w-full space-y-8 max-w-3xl">
-			{/* 題目區域 */}
+		<div className="flex flex-col items-center w-full space-y-8 max-w-3xl animate-in fade-in zoom-in-50 duration-500">
+			{/* Question Area */}
 			<form
 				onSubmit={handleSubmit}
 				className="flex flex-wrap justify-center gap-4"
@@ -101,7 +108,7 @@ export function DictationMode({ card, status, onSubmit }: DictationModeProps) {
 					const z = block.zhuyin;
 					const bopomofoStr = z.initial + z.medial + z.final + z.tone;
 
-					// 沒挖空：直接顯示
+					// Not masked: Show as CharacterBlock
 					if (!isMasked) {
 						return (
 							<div key={`${card.id}-char-${index}`}>
@@ -114,7 +121,7 @@ export function DictationMode({ card, status, onSubmit }: DictationModeProps) {
 						);
 					}
 
-					// 有挖空
+					// Masked
 					let displayChar = answers[index] || "";
 					let inputStatus: "default" | "error" | "correct" = "default";
 
@@ -133,30 +140,30 @@ export function DictationMode({ card, status, onSubmit }: DictationModeProps) {
 						<div key={`${card.id}-input-${index}`} className="relative">
 							<div
 								className={cn(
-									"relative inline-flex items-stretch rounded-lg overflow-hidden border-2 bg-white dark:bg-slate-900 transition-all duration-200 shadow-sm",
-									inputStatus === "default"
-										? "border-primary border-dashed bg-blue-50/30 dark:bg-blue-900/10"
-										: "",
-									inputStatus === "correct"
-										? "border-emerald-500 bg-emerald-50/20"
-										: "",
-									inputStatus === "error"
-										? "border-destructive bg-destructive/10"
-										: "",
+									"relative inline-flex items-stretch rounded-xl overflow-hidden border-2 transition-all duration-300 shadow-md",
+									// Default state (Question)
+									inputStatus === "default" &&
+										"border-blue-300 dark:border-blue-700 bg-white/60 dark:bg-slate-800/60 backdrop-blur-md",
+									// Correct state
+									inputStatus === "correct" &&
+										"border-emerald-500 bg-emerald-50/50 dark:bg-emerald-900/20 shadow-emerald-500/20",
+									// Error state
+									inputStatus === "error" &&
+										"border-red-500 bg-red-50/50 dark:bg-red-900/20 shadow-red-500/20",
 								)}
 							>
-								{/* 左側 Input */}
-								<div className="w-20 h-20 relative flex items-center justify-center border-r-2 border-inherit">
+								{/* Left: Input */}
+								<div className="w-20 h-24 relative flex items-center justify-center border-r-2 border-inherit">
 									<input
 										ref={(el) => {
 											inputRefs.current[index] = el;
 										}}
 										type="text"
 										className={cn(
-											"w-full h-full text-center text-5xl font-serif bg-transparent outline-none p-0 caret-primary text-slate-900 dark:text-slate-100",
+											"w-full h-full text-center text-5xl font-serif bg-transparent outline-none p-0 caret-primary text-slate-900 dark:text-slate-100 placeholder-transparent",
 											status !== "question" &&
 												inputStatus === "error" &&
-												"text-destructive",
+												"text-red-500 dark:text-red-400 font-bold",
 										)}
 										value={displayChar}
 										onChange={(e) => handleInputChange(index, e.target.value)}
@@ -166,14 +173,14 @@ export function DictationMode({ card, status, onSubmit }: DictationModeProps) {
 									/>
 								</div>
 
-								{/* 右側注音 (永遠顯示作為提示) */}
-								<div className="w-10 flex flex-col items-center justify-center bg-slate-50/50 dark:bg-slate-800/50">
-									<div className="flex flex-col items-center justify-center gap-0.5">
+								{/* Right: Zhuyin Hint */}
+								<div className="w-10 flex flex-col items-center justify-center bg-slate-100/50 dark:bg-slate-900/50">
+									<div className="flex flex-col items-center justify-center gap-0.5 transform scale-90">
 										{bopomofoStr.split("").map((s, i) => (
 											<span
-												// biome-ignore lint/suspicious/noArrayIndexKey: 靜態
+												// biome-ignore lint/suspicious/noArrayIndexKey: static list
 												key={i}
-												className="text-lg font-serif text-slate-600 dark:text-slate-400 font-medium leading-none"
+												className="text-lg font-serif text-slate-500 dark:text-slate-400 font-medium leading-none"
 											>
 												{s}
 											</span>
@@ -185,33 +192,41 @@ export function DictationMode({ card, status, onSubmit }: DictationModeProps) {
 					);
 				})}
 
-				{/* 隱藏的 Submit 按鈕，確保 Enter 可提交 */}
+				{/* Hidden Submit Button for Enter key support */}
 				<button type="submit" className="hidden" />
 			</form>
 
-			{/* 結果與解釋顯示區 (新增) */}
+			{/* Result & Explanation */}
 			{status !== "question" && (
-				<div className="w-full max-w-lg bg-slate-100 dark:bg-slate-800 p-6 rounded-xl animate-in slide-in-from-bottom-2">
+				<GlassCard
+					className="w-full max-w-lg p-6 animate-in slide-in-from-bottom-2"
+					variant="hover-glow"
+				>
 					<h3 className="font-bold text-lg mb-2 text-slate-900 dark:text-slate-100">
-						釋義與解析
+						{t("quiz.feedback.definitions", "Definitions & Analysis")}
 					</h3>
 
 					<div className="text-slate-600 dark:text-slate-300 leading-relaxed prose dark:prose-invert max-w-none">
-						<MarkdownDisplay content={card.content.meaning || "暫無解釋。"} />
+						<MarkdownDisplay
+							content={
+								card.content.meaning ||
+								t("quiz.feedback.no_meaning", "No definition available.")
+							}
+						/>
 					</div>
-				</div>
+				</GlassCard>
 			)}
 
-			{/* 提示 (僅問答時顯示) */}
+			{/* Submit Button */}
 			{status === "question" && (
-				<Button
+				<GlassButton
 					size="lg"
-					className="px-8"
+					className="px-8 min-w-[200px]"
 					onClick={handleSubmit}
 					disabled={Object.keys(answers).length === 0}
 				>
-					提交答案 (Enter)
-				</Button>
+					{t("quiz.feedback.submit", "Submit (Enter)")}
+				</GlassButton>
 			)}
 		</div>
 	);

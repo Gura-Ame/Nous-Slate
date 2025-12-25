@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 interface PageHeaderProps {
 	title: string;
 	description?: string;
-	children?: React.ReactNode; // 用於放置右側按鈕 (如：新增、搜尋框)
+	children?: React.ReactNode; // Used for placing right-side buttons (e.g., add, search box)
 	className?: string;
 }
 
@@ -27,7 +27,7 @@ export function PageHeader({
 				{description && <p className="text-muted-foreground">{description}</p>}
 			</div>
 
-			{/* 右側操作區 (自動對齊) */}
+			{/* Right-side actions (Auto-aligned) */}
 			{children && (
 				<div className="flex items-center gap-2 w-full md:w-auto">
 					{children}

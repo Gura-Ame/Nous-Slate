@@ -1,4 +1,4 @@
-import { create, type StateCreator } from "zustand"; // 1. 引入 StateCreator
+import { create, type StateCreator } from "zustand"; // 1. Import StateCreator
 import { persist } from "zustand/middleware";
 
 interface SettingsState {

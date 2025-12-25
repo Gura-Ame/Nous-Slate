@@ -15,7 +15,7 @@ export function useAuth() {
 	const [loading, setLoading] = useState(true);
 
 	useEffect(() => {
-		// 監聽登入狀態變化 (Firebase 會自動處理 Session)
+		// Listen for auth state changes (Firebase handles sessions automatically)
 		const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
 			setUser(currentUser);
 			setLoading(false);
@@ -23,12 +23,12 @@ export function useAuth() {
 			if (currentUser) {
 				try {
 					const userRef = doc(db, "users", currentUser.uid);
-					// 使用 setDoc + merge: true，確保只更新欄位而不覆蓋整個文件
+					// Use setDoc + merge: true to update fields without overwriting entire document
 					await setDoc(
 						userRef,
 						{
 							uid: currentUser.uid,
-							displayName: currentUser.displayName || "匿名使用者",
+							displayName: currentUser.displayName || "Anonymous User",
 							photoURL: currentUser.photoURL,
 							email: currentUser.email,
 							lastSeen: serverTimestamp(),
@@ -50,7 +50,7 @@ export function useAuth() {
 			await signInWithPopup(auth, googleProvider);
 		} catch (error) {
 			console.error("Login failed:", error);
-			alert("登入失敗，請稍後再試。");
+			alert("Login failed, please try again later.");
 		}
 	};
 

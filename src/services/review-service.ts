@@ -19,7 +19,7 @@ import {
 import type { Card } from "@/types/schema";
 
 export const ReviewService = {
-	// 1. 提交複習結果 (寫入 SRS 數據)
+	// 1. Submit review result (Write SRS data)
 	submitReview: async (
 		userId: string,
 		deckId: string,
@@ -30,7 +30,7 @@ export const ReviewService = {
 		const reviewRef = doc(db, "reviews", reviewId);
 
 		try {
-			// 1.1 取得舊的 SRS 狀態 (如果有的話)
+			// 1.1 Get previous SRS status (if exists)
 			const reviewSnap = await getDoc(reviewRef);
 			let currentSRS: SRSItem = { ...initialSRS };
 
@@ -41,15 +41,15 @@ export const ReviewService = {
 				}
 			}
 
-			// 1.2 計算新的 SRS 狀態 (使用 SM-2 演算法)
+			// 1.2 Calculate new SRS status (using SM-2 algorithm)
 			const nextSRS = calculateSRS(currentSRS, grade);
 
-			// 1.3 計算下次複習日期
+			// 1.3 Calculate next review date
 			const nextDate = new Date();
 			nextDate.setDate(nextDate.getDate() + nextSRS.interval);
 
-			// 1.4 寫入資料庫
-			// 使用 setDoc + merge，這樣如果文檔不存在會自動建立，存在則更新
+			// 1.4 Write to database
+			// Use setDoc + merge: auto-creates if missing, updates if exists.
 			await setDoc(
 				reviewRef,
 				{
@@ -71,13 +71,13 @@ export const ReviewService = {
 		}
 	},
 
-	// 2. 獲取今日需複習的卡片 (Review Center 用)
+	// 2. Get cards due for review today (For Review Center)
 	getDueCards: async (userId: string): Promise<Card[]> => {
 		const now = Timestamp.now();
 
 		try {
-			// 2.1 查詢 reviews 集合中，屬於該使用者且到期 (dueDate <= now) 的項目
-			// 注意：這需要建立複合索引 (userId ASC, sm2.dueDate ASC)
+			// 1.1 Query reviews collection for items belonging to user and due (dueDate <= now)
+			// NOTE: Requires composite index (userId ASC, sm2.dueDate ASC)
 			const q = query(
 				collection(db, "reviews"),
 				where("userId", "==", userId),
@@ -88,23 +88,23 @@ export const ReviewService = {
 
 			if (snapshot.empty) return [];
 
-			// 2.2 收集所有 Card ID
+			// 2.2 Collect all Card IDs
 			const cardIds = snapshot.docs.map((doc) => doc.data().cardId);
 
-			// 2.3 抓取實際的 Card 資料
-			// 為了避免一次抓太多導致效能問題，這裡簡單限制前 50 筆
-			// 若需完整實作，可分批 (Batch) 抓取或使用分頁
+			// 2.3 Fetch actual Card data
+			// To avoid performance issues from fetching too many at once, limit to 50
+			// If needed, implement batch fetching or pagination
 			const limitIds = cardIds.slice(0, 50);
 			const cards: Card[] = [];
 
-			// 使用 Promise.all 平行抓取卡片內容
+			// Fetch card content in parallel using Promise.all
 			await Promise.all(
 				limitIds.map(async (id) => {
 					try {
 						const cardRef = doc(db, "cards", id);
 						const cardSnap = await getDoc(cardRef);
 
-						// 確保卡片還存在 (可能已被刪除)
+						// Ensure card still exists (sanity check for deleted cards)
 						if (cardSnap.exists()) {
 							cards.push({ id: cardSnap.id, ...cardSnap.data() } as Card);
 						}

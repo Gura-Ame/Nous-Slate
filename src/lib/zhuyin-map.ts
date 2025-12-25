@@ -42,19 +42,19 @@ export const FINALS = [
 	"ㄦ",
 ] as const;
 
-// 這裡定義系統唯一認可的聲調符號
+// Tone symbols officially recognized by the system
 export const TONES = {
-	1: " ", // 一聲 (空白鍵)
-	2: "ˊ", // 二聲 (U+02CA)
-	3: "ˇ", // 三聲 (U+02C7)
-	4: "ˋ", // 四聲 (U+02CB)
-	5: "˙", // 輕聲 (U+02D9)
+	1: " ", // First tone (Space bar)
+	2: "ˊ", // Second tone (U+02CA)
+	3: "ˇ", // Third tone (U+02C7)
+	4: "ˋ", // Fourth tone (U+02CB)
+	5: "˙", // Neutral tone (U+02D9)
 } as const;
 
 export const TONE_SYMBOLS = Object.values(TONES);
 
 export const KEY_MAP: Record<string, string> = {
-	// 聲母
+	// Initials
 	"1": "ㄅ",
 	q: "ㄆ",
 	a: "ㄇ",
@@ -77,7 +77,7 @@ export const KEY_MAP: Record<string, string> = {
 	h: "ㄘ",
 	n: "ㄙ",
 
-	// 介音 & 韻母
+	// Medials & Finals
 	u: "ㄧ",
 	j: "ㄨ",
 	m: "ㄩ",
@@ -95,7 +95,7 @@ export const KEY_MAP: Record<string, string> = {
 	"/": "ㄥ",
 	"-": "ㄦ",
 
-	// 聲調鍵映射
+	// Tone key mappings
 	" ": TONES[1],
 	"6": TONES[2],
 	"3": TONES[3],
@@ -103,11 +103,11 @@ export const KEY_MAP: Record<string, string> = {
 	"7": TONES[5],
 };
 
-// 輔助函式：判斷是否為聲調
+// Helper function: Determine if a character is a tone symbol
 export const isToneSymbol = (char: string) =>
 	(TONE_SYMBOLS as readonly string[]).includes(char);
 
-// 輔助函式：判斷注音類型
+// Helper function: Determine Bopomofo component type
 export const getZhuyinType = (char: string) => {
 	if ((INITIALS as readonly string[]).includes(char)) return "initial";
 	if ((MEDIALS as readonly string[]).includes(char)) return "medial";

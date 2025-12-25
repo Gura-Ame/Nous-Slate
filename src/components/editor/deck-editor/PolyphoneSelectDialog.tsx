@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -24,13 +25,23 @@ export function PolyphoneSelectDialog({
 	candidates,
 	onSelect,
 }: PolyphoneSelectDialogProps) {
+	const { t } = useTranslation();
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent className="sm:max-w-md">
 				<DialogHeader>
-					<DialogTitle>請選擇「{word}」的讀音</DialogTitle>
+					<DialogTitle>
+						{t(
+							"editor.select_pronunciation",
+							"Please select pronunciation for {{word}}",
+							{ word },
+						)}
+					</DialogTitle>
 					<DialogDescription>
-						萌典查詢到多種讀音，請選擇您要教學的版本。
+						{t(
+							"editor.polyphone_desc",
+							"Multiple pronunciations found in Moedict, please select the version you want to teach.",
+						)}
 					</DialogDescription>
 				</DialogHeader>
 
@@ -38,7 +49,7 @@ export function PolyphoneSelectDialog({
 					<div className="space-y-2">
 						{candidates.map((item, index) => (
 							<Button
-								// biome-ignore lint/suspicious/noArrayIndexKey: 選項列表順序固定
+								// biome-ignore lint/suspicious/noArrayIndexKey: Standard order for options
 								key={index}
 								variant="outline"
 								className="w-full h-auto flex flex-col items-start p-4 text-left justify-start whitespace-normal"

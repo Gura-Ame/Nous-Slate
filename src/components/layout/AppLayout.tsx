@@ -9,6 +9,7 @@ import {
 	Settings,
 } from "lucide-react";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Link, Navigate, Outlet, useLocation } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
@@ -21,13 +22,13 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
 
-const NAV_ITEMS = [
-	{ href: "/", label: "儀表板", icon: LayoutDashboard },
-	{ href: "/library", label: "探索題庫", icon: Library },
-	{ href: "/editor", label: "創作後台", icon: PenTool },
-	{ href: "/settings", label: "設定", icon: Settings },
-	{ href: "/ad-center", label: "積分中心", icon: Coins },
-	{ href: "/review", label: "今日複習", icon: BrainCircuit },
+const getNavItems = (t: (key: string) => string) => [
+	{ href: "/", label: t("sidebar.dashboard"), icon: LayoutDashboard },
+	{ href: "/library", label: t("sidebar.library"), icon: Library },
+	{ href: "/editor", label: t("sidebar.editor"), icon: PenTool },
+	{ href: "/settings", label: t("sidebar.settings"), icon: Settings },
+	{ href: "/ad-center", label: t("sidebar.points"), icon: Coins },
+	{ href: "/review", label: t("sidebar.review"), icon: BrainCircuit },
 ];
 
 interface NavContentProps {
@@ -46,10 +47,13 @@ function NavContent({
 	user,
 	onLogout,
 }: NavContentProps) {
-	// 側邊欄背景：淺色時全白，深色時深灰 (slate-950)
+	const { t } = useTranslation();
+	const navItems = getNavItems(t);
+
+	// Sidebar background: white in light mode, dark gray (slate-950) in dark mode
 	return (
 		<div className="flex flex-col h-full bg-white dark:bg-slate-950 text-foreground transition-colors duration-300">
-			{/* Logo 區域 */}
+			{/* Logo Area */}
 			<div className="h-20 flex items-center px-6 shrink-0">
 				<Link to="/" className="flex items-center gap-3 group">
 					<div className="w-10 h-10 bg-primary text-primary-foreground rounded-xl flex items-center justify-center text-xl font-bold font-serif shadow-sm group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
@@ -61,9 +65,9 @@ function NavContent({
 				</Link>
 			</div>
 
-			{/* 選單區域 */}
+			{/* Menu Area */}
 			<nav className="flex-1 px-4 mt-2 space-y-2 overflow-y-auto">
-				{NAV_ITEMS.map((item) => {
+				{navItems.map((item) => {
 					const Icon = item.icon;
 					const isActive = pathname === item.href;
 					return (
@@ -72,14 +76,14 @@ function NavContent({
 							to={item.href}
 							onClick={onItemClick}
 							className={cn(
-								// Hover 動畫：hover 時背景變色 + 文字右移 (translate-x-1)
+								// Hover animation: change background + translation on hover
 								"flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-200 group font-medium text-sm relative overflow-hidden",
 								isActive
 									? "bg-slate-100 text-slate-900 dark:bg-slate-800 dark:text-slate-100 font-bold shadow-sm"
 									: "text-muted-foreground hover:bg-slate-50 hover:text-slate-900 dark:hover:bg-slate-900 dark:hover:text-slate-200 hover:pl-5 hover:pr-3",
 							)}
 						>
-							{/* 裝飾線條 (Active 時顯示) */}
+							{/* Decorative line (Visible when Active) */}
 							{isActive && (
 								<div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-primary rounded-r-full" />
 							)}
@@ -99,7 +103,7 @@ function NavContent({
 				})}
 			</nav>
 
-			{/* 底部使用者區域 */}
+			{/* User Profile Area */}
 			<div className="p-4 mt-auto">
 				{user ? (
 					<div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-900 transition-colors border border-slate-100 dark:border-slate-800">
@@ -127,7 +131,7 @@ function NavContent({
 								onClick={onLogout}
 								className="text-xs text-muted-foreground hover:text-red-500 flex items-center gap-1 transition-colors mt-0.5 font-medium"
 							>
-								<LogOut size={12} /> 登出
+								<LogOut size={12} /> {t("sidebar.logout")}
 							</button>
 						</div>
 					</div>
@@ -138,6 +142,7 @@ function NavContent({
 }
 
 export function AppLayout() {
+	const { t } = useTranslation();
 	const { pathname } = useLocation();
 	const { user, loading, logout } = useAuth();
 	const [open, setOpen] = useState(false);
@@ -145,7 +150,7 @@ export function AppLayout() {
 	if (loading) {
 		return (
 			<div className="h-screen w-full flex items-center justify-center bg-background text-foreground">
-				Loading...
+				{t("common.loading", "Loading...")}
 			</div>
 		);
 	}
@@ -155,7 +160,7 @@ export function AppLayout() {
 	}
 
 	return (
-		// 外層容器：淺色用 slate-50，深色用 black
+		// Wrapper: slate-50 for light mode, black for dark mode
 		<div className="h-screen w-full flex flex-col md:flex-row overflow-hidden bg-slate-50 dark:bg-black text-foreground">
 			{/* Mobile Header */}
 			<header className="md:hidden h-16 bg-white dark:bg-slate-950 flex items-center px-4 justify-between shrink-0 z-50 shadow-sm/50">
@@ -172,11 +177,10 @@ export function AppLayout() {
 							<Menu className="h-5 w-5" />
 						</Button>
 					</SheetTrigger>
-					<SheetContent
-						side="left"
-						className="p-0 w-72 border-none shadow-2xl"
-					>
-						<SheetTitle className="sr-only">導覽選單</SheetTitle>
+					<SheetContent side="left" className="p-0 w-72 border-none shadow-2xl">
+						<SheetTitle className="sr-only">
+							{t("common.navigation_menu", "Navigation Menu")}
+						</SheetTitle>
 						<NavContent
 							pathname={pathname}
 							onItemClick={() => setOpen(false)}

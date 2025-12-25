@@ -33,20 +33,20 @@ export function useMoedict() {
 
 			const data = (await response.json()) as MoedictRawResponse;
 
-			// 解析所有異讀字 (Heteronyms)
+			// Parse all heteronyms
 			const heteronyms: MoedictHeteronym[] = (data.heteronyms || [])
 				.map((h) => {
 					const defs = h.definitions || [];
 					let definition: string = "";
 
-					if (defs.length === 0) definition = "無解釋資料";
+					if (defs.length === 0) definition = "No explanation data available";
 					if (defs.length > 1) {
 						definition = defs
-							.slice(0, 3) // 限制最多顯示 3 個解釋，避免太長
+							.slice(0, 3) // Limit to 3 definitions to avoid excessive length
 							.map((d, index) => {
-								// 移除 HTML 標籤
+								// Remove HTML tags
 								const cleanDef = d.def.replace(/<[^>]*>?/gm, "");
-								// 加上序號 (1. 2. 3.)
+								// Add sequence numbers (1. 2. 3.)
 								return `${index + 1}. ${cleanDef}`;
 							})
 							.join("\n");
@@ -69,7 +69,7 @@ export function useMoedict() {
 			};
 		} catch (error) {
 			console.warn("Moedict search failed:", error);
-			toast.error("萌典查無此詞");
+			toast.error("Term not found in Moedict");
 			return null;
 		} finally {
 			setLoading(false);

@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import {
 	Area,
 	CartesianGrid,
@@ -13,7 +14,7 @@ interface OverviewProps {
 	data: { name: string; total: number; errorRate: number }[];
 }
 
-// 自定義 Props 介面，解決 TS 報錯與 noExplicitAny
+// Custom Tooltip Props to avoid any type
 interface CustomTooltipProps {
 	active?: boolean;
 	payload?: {
@@ -25,6 +26,7 @@ interface CustomTooltipProps {
 }
 
 const CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
+	const { t } = useTranslation();
 	if (active && payload && payload.length) {
 		return (
 			<div className="rounded-lg border border-border bg-popover p-3 shadow-lg">
@@ -32,19 +34,19 @@ const CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
 					{label}
 				</p>
 				<div className="flex flex-col gap-1">
-					{/* 第一個數據：總複習數 (Area) */}
+					{/* First: Total Reviews (Area) */}
 					<div className="flex items-center gap-2 text-xs text-muted-foreground">
 						<div className="w-2 h-2 rounded-full bg-primary" />
-						<span>複習題數: </span>
+						<span>{t("overview.total_reviews", "Total Reviews")}: </span>
 						<span className="font-bold text-foreground">
 							{payload[0]?.value}
 						</span>
 					</div>
-					{/* 第二個數據：錯誤率 (Line) */}
+					{/* Second: Error Rate (Line) */}
 					{payload[1] && (
 						<div className="flex items-center gap-2 text-xs text-muted-foreground">
 							<div className="w-2 h-2 rounded-full bg-rose-500" />
-							<span>錯誤率: </span>
+							<span>{t("overview.error_rate", "Error Rate")}: </span>
 							<span className="font-bold text-rose-500">
 								{payload[1]?.value}%
 							</span>
@@ -84,7 +86,7 @@ export function Overview({ data }: OverviewProps) {
 					dy={10}
 				/>
 
-				{/* 左軸：題數 */}
+				{/* Left Axis: Question Count */}
 				<YAxis
 					yAxisId="left"
 					stroke="var(--muted-foreground)"
@@ -95,7 +97,7 @@ export function Overview({ data }: OverviewProps) {
 					allowDecimals={false}
 				/>
 
-				{/* 右軸：錯誤率 */}
+				{/* Right Axis: Error Rate */}
 				<YAxis
 					yAxisId="right"
 					orientation="right"
@@ -116,7 +118,7 @@ export function Overview({ data }: OverviewProps) {
 					content={<CustomTooltip />}
 				/>
 
-				{/* 面積圖：總數 */}
+				{/* Area Chart: Total Reviews */}
 				<Area
 					yAxisId="left"
 					type="monotone"
@@ -127,7 +129,7 @@ export function Overview({ data }: OverviewProps) {
 					fill="url(#colorTotal)"
 				/>
 
-				{/* 折線圖：錯誤率 */}
+				{/* Line Chart: Error Rate */}
 				<Line
 					yAxisId="right"
 					type="monotone"

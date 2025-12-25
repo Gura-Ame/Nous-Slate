@@ -4,17 +4,17 @@ import { MarkdownDisplay } from "@/components/shared/MarkdownDisplay";
 import type { Deck } from "@/types/schema";
 import { CardService } from "./card-service";
 
-// 輔助：洗牌陣列 (僅用於舊版資料相容)
+// Helper: Shuffle array (Only for legacy data compatibility)
 function shuffle<T>(array: T[]): T[] {
 	return [...array].sort(() => Math.random() - 0.5);
 }
 
-// 輔助：將數字轉為 A, B, C, D
+// Helper: Convert number to A, B, C, D
 function toLetter(index: number) {
 	return String.fromCharCode(65 + index);
 }
 
-// 輔助：抓取當前頁面的所有 CSS
+// Helper: Fetch all CSS of the current page
 function getAppStyles() {
 	const styles = Array.from(
 		document.querySelectorAll('style, link[rel="stylesheet"]'),
@@ -26,7 +26,7 @@ function getAppStyles() {
 
 function parseMarkdown(text: string) {
 	if (!text) return "";
-	// 直接渲染我們的共用組件，確保邏輯(包含螢光筆)一致
+	// Render using our shared component to ensure consistency (including highlighter)
 	return renderToStaticMarkup(
 		React.createElement(MarkdownDisplay, { content: text }),
 	);
@@ -44,12 +44,12 @@ export const PdfService = {
 
 						let finalOptions: string[];
 
-						// 如果選項陣列中已經包含答案，代表是新格式 (固定順序 ABCD)
-						// 我們直接使用原陣列，不洗牌
+						// If choice array already includes answer, it's the new format (fixed order ABCD)
+						// Use original array directly without shuffling
 						if (options.includes(answer)) {
 							finalOptions = options;
 						} else {
-							// 舊格式 (options 只有干擾項)，需要合併後洗牌
+							// Old format (options only contain distractors), need to merge and shuffle
 							finalOptions = shuffle([answer, ...options]);
 						}
 
@@ -63,7 +63,7 @@ export const PdfService = {
 
 		const printWindow = window.open("", "_blank");
 		if (!printWindow) {
-			alert("請允許彈出式視窗以進行列印");
+			alert("Please allow popups to proceed with printing");
 			return;
 		}
 
@@ -73,7 +73,7 @@ export const PdfService = {
       <!DOCTYPE html>
       <html>
         <head>
-          <title>Nous Slate - 題庫匯出</title>
+          <title>Nous Slate - Deck Export</title>
           
           ${appStyles}
 
@@ -118,7 +118,7 @@ export const PdfService = {
             .q-stem p { margin: 0; display: inline; } 
             .q-stem strong { color: #000; }
 
-            /* 強制表格邊框 */
+            /* Force table borders */
             table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 14px; }
             th, td { border: 1px solid #333; padding: 6px 12px; text-align: left; }
             th { background-color: #f3f4f6; font-weight: bold; }
@@ -162,7 +162,7 @@ export const PdfService = {
         </head>
         <body>
           
-          <!-- 試題卷 -->
+          <!-- Test Paper -->
           <div class="section-questions">
             ${deckData
 							.map(
@@ -213,7 +213,7 @@ export const PdfService = {
                              `,
 														)
 														.join("");
-													contentHtml = `<div>${blockHtml} <span style="font-size:12px;color:#666;">(請填入國字)</span></div>`;
+													contentHtml = `<div>${blockHtml} <span style="font-size:12px;color:#666;">(Please fill in characters)</span></div>`;
 												} else if (card.type === "fill_blank") {
 													contentHtml = `<div style="border-bottom: 1px solid #333; display:inline-block; width: 100px;"></div>`;
 												}
@@ -239,17 +239,17 @@ export const PdfService = {
 
           <div class="page-break"></div>
 
-          <!-- 解析卷 -->
+          <!-- Answer Key -->
           <div class="section-answers">
              <div style="text-align: center; margin-bottom: 40px;">
-                <h1 style="border: none; color: #059669; border-color: #059669; font-size: 24px; font-weight: bold; border-bottom: 2px solid #059669; padding-bottom: 10px;">解答與解析</h1>
+                <h1 style="border: none; color: #059669; border-color: #059669; font-size: 24px; font-weight: bold; border-bottom: 2px solid #059669; padding-bottom: 10px;">Answer Key & Analysis</h1>
             </div>
 
             ${deckData
 							.map(
 								({ deck, cards }) => `
                 <div class="deck-block no-break">
-                    <h2>${deck.title} - 解答</h2>
+                    <h2>${deck.title} - Answers</h2>
                     <div class="answer-key">
                     ${cards
 											.map((card, index) => {
@@ -262,7 +262,7 @@ export const PdfService = {
 														card.content.answer || "",
 													);
 													answerText =
-														ansIndex !== -1 ? toLetter(ansIndex) : "無答案";
+														ansIndex !== -1 ? toLetter(ansIndex) : "No Answer";
 												} else if (
 													card.type === "term" ||
 													card.type === "dictation"

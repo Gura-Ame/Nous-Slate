@@ -29,10 +29,10 @@ export function QuizArea({ card, status, onAnswer }: QuizAreaProps) {
 
 		return (
 			<div className="text-center space-y-10 flex flex-col items-center max-w-6xl w-full mb-12">
-				{/* 圖片 */}
+				{/* Image */}
 				{card.content.image && (
 					<div className="relative mb-6 rounded-2xl overflow-hidden border bg-white dark:bg-slate-900 shadow-md">
-						<FirestoreImage // 改用這個
+						<FirestoreImage // Use this component
 							src={card.content.image}
 							alt="Quiz"
 							className="max-h-[40vh] w-auto object-contain"
@@ -40,7 +40,7 @@ export function QuizArea({ card, status, onAnswer }: QuizAreaProps) {
 					</div>
 				)}
 
-				{/* 發音按鈕 */}
+				{/* Pronunciation Button */}
 				<button
 					type="button"
 					className="relative group cursor-pointer bg-transparent border-none p-4 transition-transform active:scale-95"
@@ -54,7 +54,7 @@ export function QuizArea({ card, status, onAnswer }: QuizAreaProps) {
 					</div>
 				</button>
 
-				{/* 解析 */}
+				{/* Analysis */}
 				<div className="text-xl md:text-2xl text-slate-500 max-w-2xl mx-auto min-h-8 font-medium prose dark:prose-invert markdown-table">
 					{status !== "question" && (
 						<MarkdownDisplay content={card.content.meaning || ""} />
@@ -65,7 +65,7 @@ export function QuizArea({ card, status, onAnswer }: QuizAreaProps) {
 	};
 
 	return (
-		// 使用 flex-col 和 w-full 確保寬度
+		// Use flex-col and w-full to ensure width
 		<div className="w-full flex flex-col items-center justify-center flex-1">
 			{renderQuestionHeader()}
 

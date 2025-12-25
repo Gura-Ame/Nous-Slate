@@ -1,15 +1,15 @@
 import type { LucideIcon } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { GlassCard } from "@/components/ui/glass/GlassCard";
 import { cn } from "@/lib/utils";
 
 interface StatCardProps {
 	title: string;
 	value: string | number;
 	icon: LucideIcon;
-	description?: React.ReactNode; // 允許傳入字串或 JSX
-	className?: string; // 卡片本身的樣式
-	iconClassName?: string; // 圖標的顏色樣式
-	valueClassName?: string; // 數字的顏色樣式
+	description?: React.ReactNode;
+	className?: string;
+	iconClassName?: string;
+	valueClassName?: string;
 }
 
 export function StatCard({
@@ -22,21 +22,26 @@ export function StatCard({
 	valueClassName,
 }: StatCardProps) {
 	return (
-		<Card className={className}>
-			<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-				<CardTitle className="text-sm font-medium text-muted-foreground">
+		<GlassCard className={cn("p-6", className)} variant="hover-glow">
+			<div className="flex flex-row items-center justify-between space-y-0 pb-2">
+				<h3 className="text-sm font-medium text-slate-500 dark:text-slate-400">
 					{title}
-				</CardTitle>
-				{/* 統一管理圖標大小：h-5 w-5 (20px) */}
-				<Icon className={cn("h-6 w-6 opacity-70", iconClassName)} />
-			</CardHeader>
-			<CardContent>
-				{/* 統一管理數字大小：text-2xl (24px) */}
-				<div className={cn("text-2xl font-bold", valueClassName)}>{value}</div>
+				</h3>
+				<Icon className={cn("h-5 w-5 opacity-70", iconClassName)} />
+			</div>
+			<div>
+				<div
+					className={cn(
+						"text-2xl font-bold text-slate-800 dark:text-slate-100",
+						valueClassName,
+					)}
+				>
+					{value}
+				</div>
 				{description && (
-					<p className="text-xs text-muted-foreground mt-1">{description}</p>
+					<p className="text-xs text-slate-500 mt-1">{description}</p>
 				)}
-			</CardContent>
-		</Card>
+			</div>
+		</GlassCard>
 	);
 }

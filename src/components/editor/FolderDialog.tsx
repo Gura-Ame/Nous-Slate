@@ -2,6 +2,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Check, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
+import { useTranslation } from "react-i18next";
 import * as z from "zod";
 
 import { Button } from "@/components/ui/button";
@@ -31,13 +32,20 @@ const FOLDER_COLORS = [
 	{ name: "Slate", value: "bg-slate-500" },
 ];
 
-const formSchema = z.object({
-	name: z.string().min(1, "請輸入資料夾名稱").max(20),
-	color: z.string(),
-	isPublic: z.boolean(),
-});
+const getFormSchema = (t: (key: string, fallback: string) => string) =>
+	z.object({
+		name: z
+			.string()
+			.min(
+				1,
+				t("folder_dialog.validation_name_required", "Please enter folder name"),
+			)
+			.max(20),
+		color: z.string(),
+		isPublic: z.boolean(),
+	});
 
-type FormData = z.infer<typeof formSchema>;
+type FormData = z.infer<ReturnType<typeof getFormSchema>>;
 
 interface FolderDialogProps {
 	open: boolean;
@@ -52,6 +60,7 @@ export function FolderDialog({
 	folder,
 	onSubmit,
 }: FolderDialogProps) {
+	const { t } = useTranslation();
 	const [isSubmitting, setIsSubmitting] = useState(false);
 
 	const {
@@ -62,7 +71,7 @@ export function FolderDialog({
 		reset,
 		formState: { errors },
 	} = useForm<FormData>({
-		resolver: zodResolver(formSchema),
+		resolver: zodResolver(getFormSchema(t)),
 		defaultValues: {
 			name: "",
 			color: "bg-blue-500",
@@ -106,19 +115,31 @@ export function FolderDialog({
 			<DialogContent className="sm:max-w-[425px]">
 				<form onSubmit={handleSubmit(onFormSubmit)}>
 					<DialogHeader>
-						<DialogTitle>{folder ? "編輯資料夾" : "新增資料夾"}</DialogTitle>
+						<DialogTitle>
+							{folder
+								? t("folder_dialog.edit_title", "Edit Folder")
+								: t("folder_dialog.create_title", "New Folder")}
+						</DialogTitle>
 						<DialogDescription>
-							設定資料夾名稱、顏色與公開權限。
+							{t(
+								"folder_dialog.desc",
+								"Set up folder name, color and permissions.",
+							)}
 						</DialogDescription>
 					</DialogHeader>
 
 					<div className="grid gap-6 py-4">
 						<div className="grid gap-2">
-							<Label htmlFor="name">名稱</Label>
+							<Label htmlFor="name">
+								{t("folder_dialog.name_label", "Name")}
+							</Label>
 							<Input
 								id="name"
 								{...register("name")}
-								placeholder="例如：國文第一冊"
+								placeholder={t(
+									"folder_dialog.name_placeholder",
+									"e.g., Chinese Vol. 1",
+								)}
 							/>
 							{errors.name && (
 								<p className="text-xs text-red-500">{errors.name.message}</p>
@@ -126,7 +147,7 @@ export function FolderDialog({
 						</div>
 
 						<div className="grid gap-2">
-							<Label>代表顏色</Label>
+							<Label>{t("folder_dialog.color_label", "Color")}</Label>
 							<div className="flex flex-wrap gap-3">
 								{FOLDER_COLORS.map((c) => (
 									<button
@@ -152,13 +173,14 @@ export function FolderDialog({
 
 						<div className="flex items-center justify-between border p-3 rounded-lg bg-slate-50 dark:bg-slate-900/50">
 							<div className="space-y-0.5">
-								<Label className="text-base">設為公開資料夾</Label>
+								<Label className="text-base">
+									{t("folder_dialog.public_label", "Make folder public")}
+								</Label>
 								<p className="text-xs text-muted-foreground">
-									公開後，所有人都可以在「探索」中看到此分類。
-									<br />
-									<span className="text-amber-600 dark:text-amber-500 font-medium">
-										(此設定將允許他人讀取內部的題庫)
-									</span>
+									{t(
+										"folder_dialog.public_desc",
+										"Allow others to see in Library.",
+									)}
 								</p>
 							</div>
 							<Switch
@@ -174,13 +196,15 @@ export function FolderDialog({
 							variant="outline"
 							onClick={() => onOpenChange(false)}
 						>
-							取消
+							{t("common.cancel", "Cancel")}
 						</Button>
 						<Button type="submit" disabled={isSubmitting}>
 							{isSubmitting && (
 								<Loader2 className="mr-2 h-4 w-4 animate-spin" />
 							)}
-							{folder ? "儲存變更" : "立即建立"}
+							{folder
+								? t("folder_dialog.save", "Save Changes")
+								: t("folder_dialog.create", "Create Now")}
 						</Button>
 					</DialogFooter>
 				</form>

@@ -1,12 +1,12 @@
 import type { CardContent, CardType } from "./schema";
 
-// 匯出的最小單位：卡片
+// Smallest unit of export: Card
 export interface ExportCard {
 	type: CardType;
 	content: CardContent;
 }
 
-// 匯出的題庫
+// Exported Deck
 export interface ExportDeck {
 	title: string;
 	description?: string;
@@ -15,7 +15,7 @@ export interface ExportDeck {
 	cards: ExportCard[];
 }
 
-// 匯出的資料夾 (包含裡面的題庫)
+// Exported Folder (including decks within)
 export interface ExportFolder {
 	name: string;
 	color: string;
@@ -23,19 +23,18 @@ export interface ExportFolder {
 	decks: ExportDeck[];
 }
 
-// 匯出的完整備份包 (包含使用者設定、所有資料夾、未分類題庫)
+// Full Export Backup (includes settings, all folders, and uncategorized decks)
 export interface ExportBackup {
-	version: number; // 版本控制，方便未來升級
+	version: number; // Version control for future upgrades
 	timestamp: number;
-	type: "full_backup" | "folder" | "deck"; // 標記這份檔案是什麼
-
-	// 如果是 full_backup
+	type: "full_backup" | "folder";
+	// If full_backup
 	userProfile?: {
 		displayName: string;
 		points: number;
-		// 不匯出敏感資訊如 email/uid
+		// Do not export sensitive info like email/uid
 	};
 
-	folders: ExportFolder[]; // 資料夾及其內容
-	uncategorizedDecks: ExportDeck[]; // 未分類的題庫
+	folders: ExportFolder[]; // Folders and their content
+	uncategorizedDecks: ExportDeck[]; // Uncategorized decks
 }

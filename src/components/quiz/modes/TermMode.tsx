@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { toast } from "sonner"; // 引入 toast
+import { useTranslation } from "react-i18next";
+import { toast } from "sonner"; // Import toast
 import { CharacterBlock } from "@/components/quiz/CharacterBlock";
 import { VirtualKeyboard } from "@/components/quiz/VirtualKeyboard";
 import { type BopomofoChar, useBopomofo } from "@/hooks/useBopomofo";
@@ -18,7 +19,7 @@ export function TermMode({ card, status, onSubmit }: TermModeProps) {
 	);
 	const [focusedIndex, setFocusedIndex] = useState(0);
 
-	// 1. 初始化與重置邏輯
+	// 1. Initialization and reset logic
 	const [prevCardId, setPrevCardId] = useState(card.id);
 	if (card.id !== prevCardId) {
 		setPrevCardId(card.id);
@@ -26,7 +27,7 @@ export function TermMode({ card, status, onSubmit }: TermModeProps) {
 		setFocusedIndex(0);
 	}
 
-	// 2. 聚焦邏輯
+	// 2. Focus logic
 	useEffect(() => {
 		if (status === "question") {
 			const timer = setTimeout(() => {
@@ -36,15 +37,23 @@ export function TermMode({ card, status, onSubmit }: TermModeProps) {
 		}
 	}, [status]);
 
-	const handleCompositionStart = () => {
-		// 1. 跳出警告
-		toast.warning("請切換至英文模式", {
-			description: "本系統內建注音引擎，請關閉您的系統輸入法以正常打字。",
-			duration: 3000,
-		});
+	const { t } = useTranslation();
 
-		// 2. 強制中斷 IME 狀態
-		// 原理：讓 input 失去焦點再重新聚焦，會強制瀏覽器關閉正在開啟的選字視窗
+	const handleCompositionStart = () => {
+		// 1. Trigger warning
+		toast.warning(
+			t("quiz.feedback.ime_warning_title", "Switch to English Mode"),
+			{
+				description: t(
+					"quiz.feedback.ime_warning_desc",
+					"Please turn off your system IME.",
+				),
+				duration: 3000,
+			},
+		);
+
+		// 2. Force break IME state
+		// Principle: Blur the input and refocus to close the browser's character selection window
 		if (inputRef.current) {
 			inputRef.current.blur();
 			setTimeout(() => {
@@ -78,7 +87,9 @@ export function TermMode({ card, status, onSubmit }: TermModeProps) {
 	}, [userInputs, status, card, onSubmit]);
 
 	// Fix circular dependency by using a ref for the setter
-	const setInternalBufferRef = useRef<((char: BopomofoChar) => void) | null>(null);
+	const setInternalBufferRef = useRef<((char: BopomofoChar) => void) | null>(
+		null,
+	);
 
 	const {
 		displayBuffer,
@@ -143,8 +154,8 @@ export function TermMode({ card, status, onSubmit }: TermModeProps) {
 	const blocks = card.content.blocks || [];
 
 	return (
-		// biome-ignore lint/a11y/useKeyWithClickEvents: 背景點擊僅為 UX 優化
-		// biome-ignore lint/a11y/noStaticElementInteractions: 背景點擊僅為 UX 優化
+		// biome-ignore lint/a11y/useKeyWithClickEvents: Background click is for UX optimization
+		// biome-ignore lint/a11y/noStaticElementInteractions: Background click is for UX optimization
 		<div
 			className="flex flex-col items-center w-full outline-none"
 			onClick={() => {
@@ -208,7 +219,7 @@ export function TermMode({ card, status, onSubmit }: TermModeProps) {
 				autoCorrect="off"
 				autoCapitalize="off"
 				spellCheck="false"
-				// biome-ignore lint/a11y/noAutofocus: 遊戲體驗核心需求
+				// biome-ignore lint/a11y/noAutofocus: Core requirement for game experience
 				autoFocus
 				autoComplete="off"
 				disabled={status !== "question"}

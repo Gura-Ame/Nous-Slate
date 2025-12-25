@@ -1,6 +1,7 @@
 // src/pages/DeckEditor.tsx
 import { useCallback, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
+import { useTranslation } from "react-i18next";
 import { useParams } from "react-router-dom";
 import { toast } from "sonner";
 // Components
@@ -21,6 +22,7 @@ import { CardService } from "@/services/card-service";
 import type { CardContent, Card as CardType } from "@/types/schema";
 
 export default function DeckEditor() {
+	const { t } = useTranslation();
 	const { deckId } = useParams<{ deckId: string }>();
 	const [cards, setCards] = useState<CardType[]>([]);
 	const [loading, setLoading] = useState(true);
@@ -59,11 +61,11 @@ export default function DeckEditor() {
 			setCards(data);
 		} catch (error) {
 			console.error(error);
-			toast.error("無法載入卡片列表");
+			toast.error(t("deck_editor.error_load_cards", "Failed to load cards"));
 		} finally {
 			setLoading(false);
 		}
-	}, [deckId]);
+	}, [deckId, t]);
 
 	useEffect(() => {
 		fetchCards();
@@ -72,43 +74,53 @@ export default function DeckEditor() {
 	// Handlers
 	const handleAutoFillMoedict = async () => {
 		const stem = form.getValues("stem");
-		if (!stem) return toast.error("請輸入題目 (國字)");
+		if (!stem)
+			return toast.error(
+				t("deck_editor.error_no_stem", "Please enter the term"),
+			);
 
 		const result = await searchMoedict(stem);
 
 		if (result) {
 			if (result.heteronyms.length === 1) {
-				// Case A: 只有一個讀音，直接填入
+				// Case A: Only one pronunciation, fill in directly
 				const first = result.heteronyms[0];
 				form.setValue("zhuyinRaw", first.bopomofo);
 				form.setValue("definition", first.definition);
-				toast.success("萌典資料已填入");
+				toast.success(
+					t("deck_editor.moedict_filled", "Dictionary data filled"),
+				);
 			} else {
-				// Case B: 多個讀音，打開選單
+				// Case B: Multiple pronunciations, open selection dialog
 				setPolyphoneCandidates(result.heteronyms);
 				setPolyphoneOpen(true);
 			}
 		}
 	};
 
-	// 新增：處理選單回傳
+	// New: Handle selection from dialog
 	const handlePolyphoneSelect = (selected: MoedictHeteronym) => {
 		form.setValue("zhuyinRaw", selected.bopomofo);
 		form.setValue("definition", selected.definition);
-		toast.success("已選擇讀音");
+		toast.success(
+			t("deck_editor.pronunciation_selected", "Pronunciation selected"),
+		);
 	};
 
 	const handleAutoFillDict = async () => {
 		const stem = form.getValues("stem");
-		if (!stem) return toast.error("請輸入單字");
+		if (!stem)
+			return toast.error(t("common.enter_word", "Please enter a word"));
 		const result = await searchDict(stem);
 		if (result) {
 			const def = `[${result.phonetic}]\n\n${result.definition}`;
 			form.setValue("definition", def);
 			if (result.audio) form.setValue("audioUrl", result.audio);
-			toast.success("字典資料已填入");
+			toast.success(t("common.dict_filled", "Dictionary data filled"));
 		}
 	};
+
+	const { reset } = form;
 
 	const handleSubmit = useCallback(
 		async (data: DeckEditorFormData) => {
@@ -131,27 +143,29 @@ export default function DeckEditor() {
 						zhuyin: bopomofoList[index] || parseOneBopomofo(""),
 					}));
 				} else if (data.type === "choice") {
-					content.answer = data.answer; // 這應該要是正確選項的文字
+					content.answer = data.answer; // This should be the text of the correct option
 					content.options = [
 						data.option1,
 						data.option2,
 						data.option3,
-						data.option4, // 新增
-					].filter(Boolean); // 過濾掉空字串
+						data.option4, // Added
+					].filter(Boolean); // Filter out empty strings
 				} else if (data.type === "fill_blank") {
 					content.answer = data.answer;
 				}
 
 				if (editingCardId) {
 					await CardService.updateCard(editingCardId, content);
-					toast.success("更新成功");
+					toast.success(t("deck_editor.save_success", "Updated successfully"));
 					setEditingCardId(null);
 				} else {
 					await CardService.createCard(deckId, data.type, content);
-					toast.success("新增成功");
+					toast.success(
+						t("deck_editor.create_success", "Created successfully"),
+					);
 				}
 
-				form.reset({
+				reset({
 					type: data.type,
 					stem: "",
 					zhuyinRaw: "",
@@ -161,22 +175,28 @@ export default function DeckEditor() {
 					option1: "",
 					option2: "",
 					option3: "",
+					option4: "",
 				});
 				fetchCards();
 			} catch (error) {
 				console.error(error);
-				toast.error("儲存失敗");
+				toast.error(t("deck_editor.save_error", "Save failed"));
 			} finally {
 				setSaving(false);
 			}
 		},
-		[deckId, fetchCards, editingCardId, form.reset],
+		[deckId, fetchCards, editingCardId, reset, t],
 	);
 
 	const handleDelete = async (cardId: string) => {
-		if (!confirm("確定刪除？")) return;
+		if (
+			!confirm(
+				t("deck_editor.delete_confirm", "Are you sure you want to delete?"),
+			)
+		)
+			return;
 		await CardService.deleteCard(cardId);
-		toast.success("已刪除");
+		toast.success(t("deck_editor.delete_success", "Deleted"));
 		fetchCards();
 	};
 
@@ -194,9 +214,9 @@ export default function DeckEditor() {
 
 		if (card.type === "term" || card.type === "dictation") {
 			formData.zhuyinRaw = reconstructZhuyin(content.blocks);
-			// 如果是舊卡片沒有 maskedIndices，預設為全空 (或全選，看需求)
+			// If legacy card doesn't have maskedIndices, default to empty
 			if (!content.maskedIndices && card.type === "dictation") {
-				// 這裡選擇不預設，讓 useEffect 或使用者自己點
+				// Decided not to default, let useEffect or user select
 				formData.maskedIndices = [];
 			}
 		} else if (card.type === "choice") {

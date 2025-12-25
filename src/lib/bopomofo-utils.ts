@@ -2,52 +2,52 @@
 import type { BopomofoData } from "@/types/schema";
 import { FINALS, INITIALS, MEDIALS } from "./zhuyin-map";
 
-// 判斷字元類型的輔助函式
+// Helper functions to determine character types
 const isInitial = (c: string) => (INITIALS as readonly string[]).includes(c);
 const isMedial = (c: string) => (MEDIALS as readonly string[]).includes(c);
 const isFinal = (c: string) => (FINALS as readonly string[]).includes(c);
 const isTone = (c: string) => [" ", "ˊ", "ˇ", "ˋ", "˙"].includes(c);
 
 /**
- * 將單一字的注音字串 (e.g., "ㄏㄤˊ") 解析為結構物件
+ * Parses a single character's Bopomofo string (e.g., "ㄏㄤˊ") into a structured object.
  */
 export function parseOneBopomofo(str: string): BopomofoData {
 	let remaining = str;
-	let tone = ""; // 預設一聲
+	let tone = ""; // Default to first tone
 
-	// 1. 抓聲調 (通常在最後，除了輕聲可能在最前，但萌典格式通常在最後)
+	// 1. Capture tone (Usually at the end, except neutral tone which might be at the start)
 	const lastChar = remaining.slice(-1);
 	if (isTone(lastChar)) {
 		tone = lastChar;
 		remaining = remaining.slice(0, -1);
 	} else if (remaining.startsWith("˙")) {
-		// 處理輕聲在前面的狀況 (較少見，但防呆)
+		// Handle cases where neutral tone symbol is at the start (less common, but defensive)
 		tone = "˙";
 		remaining = remaining.slice(1);
 	}
 
-	// 2. 依序抓取聲母、介音、韻母
+	// 2. Sequentially capture initial, medial, and final components
 	let initial = "";
 	let medial = "";
 	let final = "";
 
-	// 嘗試匹配聲母 (取第一個字)
+	// Try matching initial (first character)
 	if (remaining.length > 0 && isInitial(remaining[0])) {
 		initial = remaining[0];
 		remaining = remaining.slice(1);
 	}
 
-	// 嘗試匹配介音
+	// Try matching medial
 	if (remaining.length > 0 && isMedial(remaining[0])) {
 		medial = remaining[0];
 		remaining = remaining.slice(1);
 	}
 
-	// 剩下的是韻母
+	// Remaining part is the final
 	if (remaining.length > 0 && isFinal(remaining[0])) {
 		final = remaining[0];
 	} else if (remaining.length > 0) {
-		// 如果還有剩，可能是介音誤判或複韻母，這裡做簡單 fallback
+		// If anything remains, it might be a misidentified medial or compound final; simple fallback here
 		if (!medial && isMedial(remaining[0])) medial = remaining[0];
 		else final = remaining;
 	}
@@ -56,9 +56,9 @@ export function parseOneBopomofo(str: string): BopomofoData {
 }
 
 /**
- * 將整句注音字串 (e.g., "ㄧㄣˊ ㄏㄤˊ") 轉為陣列
+ * Parses a full phrase's Bopomofo string (e.g., "ㄧㄣˊ ㄏㄤˊ") into an array of objects.
  */
 export function parseBopomofoString(fullString: string): BopomofoData[] {
-	// 萌典通常用空白分隔字
+	// Moedict typically uses spaces to separate characters
 	return fullString.split(" ").map((s) => parseOneBopomofo(s.trim()));
 }

@@ -1,15 +1,17 @@
 import { CheckCircle } from "lucide-react";
 import { useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom"; // 確保引入 useParams
+import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
 import { ExitDialog } from "@/components/quiz/session/ExitDialog";
 import { QuizArea } from "@/components/quiz/session/QuizArea";
 import { QuizFeedback } from "@/components/quiz/session/QuizFeedback";
 import { QuizHeader } from "@/components/quiz/session/QuizHeader";
 import { PageLoading } from "@/components/shared/PageLoading";
-import { Button } from "@/components/ui/button";
+import { GlassButton } from "@/components/ui/glass/GlassButton";
 import { useQuizController } from "@/hooks/useQuizController";
 
 export default function QuizSession() {
+	const { t } = useTranslation();
 	const navigate = useNavigate();
 	const containerRef = useRef<HTMLDivElement>(null);
 
@@ -44,23 +46,35 @@ export default function QuizSession() {
 		return () => window.removeEventListener("keydown", handleKey);
 	}, [status, handleNext, navigate]);
 
-	if (authLoading || isLoading) return <PageLoading message="準備練習中..." />;
+	if (authLoading || isLoading)
+		return (
+			<PageLoading message={t("quiz.preparing", "Preparing session...")} />
+		);
 
 	if (status === "finished") {
 		return (
-			<div className="h-screen flex flex-col items-center justify-center space-y-6 bg-slate-50 dark:bg-slate-950 animate-in fade-in zoom-in duration-500">
-				<CheckCircle className="w-24 h-24 text-emerald-500 mb-4" />
-				<div className="text-4xl text-slate-800 dark:text-slate-100">
-					練習完成！
+			<div className="h-screen flex flex-col items-center justify-center space-y-6 bg-slate-50 dark:bg-slate-950 animate-in fade-in zoom-in duration-500 relative overflow-hidden">
+				{/* Success Background Blobs */}
+				<div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-emerald-400/10 rounded-full blur-3xl -z-10 pointer-events-none" />
+
+				<CheckCircle className="w-24 h-24 text-emerald-500 mb-4 drop-shadow-lg" />
+				<div className="text-4xl text-slate-800 dark:text-slate-100 font-bold">
+					{t("quiz.finished", "Session Completed!")}
 				</div>
-				<p className="text-muted-foreground">本次練習：{cards.length} 題</p>
+				<p className="text-muted-foreground text-lg">
+					{t("quiz.session_stats", { count: cards.length })}
+				</p>
 				<div className="flex gap-4">
-					<Button variant="outline" onClick={() => navigate("/review")}>
-						回到複習中心
-					</Button>
-					<Button onClick={() => navigate("/library")}>探索新題庫</Button>
+					<GlassButton variant="outline" onClick={() => navigate("/review")}>
+						{t("quiz.back_to_review", "Back to Review")}
+					</GlassButton>
+					<GlassButton onClick={() => navigate("/library")}>
+						{t("quiz.explore_new", "Explore New Decks")}
+					</GlassButton>
 				</div>
-				<p className="text-xs text-slate-400 mt-8">按 Enter 返回</p>
+				<p className="text-xs text-slate-400 mt-8 animate-pulse">
+					{t("quiz.return_hint", "Press Enter to return")}
+				</p>
 			</div>
 		);
 	}
@@ -69,11 +83,11 @@ export default function QuizSession() {
 		return (
 			<div className="h-screen flex flex-col items-center justify-center space-y-4 bg-slate-50 dark:bg-slate-950">
 				<div className="text-xl font-bold text-slate-700 dark:text-slate-300">
-					⚠️ 無法載入題目
+					{t("quiz.error_loading", "Unable to load cards")}
 				</div>
-				<Button onClick={() => navigate(-1)} variant="outline">
-					返回
-				</Button>
+				<GlassButton onClick={() => navigate(-1)} variant="outline">
+					{t("common.back", "Back")}
+				</GlassButton>
 			</div>
 		);
 	}
@@ -81,12 +95,18 @@ export default function QuizSession() {
 	return (
 		<div
 			ref={containerRef}
-			// 這裡使用 flex-col 讓 Header 與 Main 上下排列
-			className="h-screen flex flex-col bg-slate-50 dark:bg-slate-950 cursor-default outline-none overflow-hidden"
-			// biome-ignore lint/a11y/noNoninteractiveTabindex: 必須聚焦以捕獲全域鍵盤事件 (Enter 換題)
+			// Use flex-col to stack Header and Main vertically
+			className="h-screen flex flex-col bg-slate-50 dark:bg-slate-950 cursor-default outline-none overflow-hidden relative"
+			// biome-ignore lint/a11y/noNoninteractiveTabindex: Must focus to capture global keyboard events (Enter for next question)
 			tabIndex={0}
 		>
-			{/* Header 高度固定，不會浮動在內容上方 */}
+			{/* Ambient Background */}
+			<div className="absolute inset-0 overflow-hidden pointer-events-none -z-0">
+				<div className="absolute top-[-20%] right-[-10%] w-[40%] h-[40%] bg-blue-400/5 dark:bg-blue-600/5 rounded-full blur-3xl animate-blob" />
+				<div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-purple-400/5 dark:bg-purple-600/5 rounded-full blur-3xl animate-blob animation-delay-2000" />
+			</div>
+
+			{/* Header fixed height, won't float over content */}
 			<div className="shrink-0 z-50 relative">
 				<QuizHeader
 					currentIndex={currentIndex}
@@ -96,20 +116,20 @@ export default function QuizSession() {
 			</div>
 
 			{/* 
-               Main 區域：
-               flex-1: 自動填滿剩餘高度
-               overflow-y-auto: 內容過長時，只有這裡會捲動
+               Main area:
+               flex-1: Automatically fills remaining height
+               overflow-y-auto: Only this area scrolls if content is too long
             */}
-			<main className="flex-1 overflow-y-auto w-full relative">
+			<main className="flex-1 overflow-y-auto w-full relative z-10">
 				<div className="min-h-full flex flex-col items-center justify-center p-4 md:p-8 pb-32">
-					{/* 中間：題目與作答區 */}
+					{/* Center: Question and Input area */}
 					<QuizArea
 						card={currentCard}
 						status={status}
 						onAnswer={handleAnswer}
 					/>
 
-					{/* 底部：結果回饋區 (使用固定定位或放在流式佈局中皆可，這裡放流式佈局下方) */}
+					{/* Bottom: Feedback area (can be fixed or fluid, here it's fluid) */}
 					<div className="w-full flex justify-center mt-8 min-h-16">
 						<QuizFeedback
 							status={status}

@@ -9,9 +9,9 @@ export type QuizStatus =
 	| "finished";
 
 interface QuizState {
-	cards: Card[]; // 本次練習的所有卡片
-	currentIndex: number; // 目前在第幾題
-	status: QuizStatus; // 當前狀態
+	cards: Card[]; // All cards in this session
+	currentIndex: number; // Current card index
+	status: QuizStatus; // Current status
 	correctCount: number;
 	wrongCount: number;
 
@@ -55,7 +55,7 @@ export const useQuizStore = create<QuizState>((set, get) => ({
 		} else {
 			set({
 				currentIndex: currentIndex + 1,
-				status: "question", // 回到出題狀態
+				status: "question", // Return to question state
 			});
 		}
 	},

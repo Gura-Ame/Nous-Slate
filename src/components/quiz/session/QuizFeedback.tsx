@@ -1,5 +1,6 @@
 import { CheckCircle, XCircle } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { useTranslation } from "react-i18next";
+import { GlassButton } from "@/components/ui/glass/GlassButton";
 import type { Card } from "@/types/schema";
 
 interface QuizFeedbackProps {
@@ -15,10 +16,11 @@ export function QuizFeedback({
 	isProcessing,
 	onNext,
 }: QuizFeedbackProps) {
-	// Flashcard 不需要回饋區 (它自己處理翻面和下一題)
+	const { t } = useTranslation();
+	// Flashcards don't need a feedback area (they handle their own flip and next-question logic)
 	if (card.type === "flashcard") return null;
 
-	// 正確答案顯示邏輯
+	// Correct answer display logic
 	const renderCorrectAnswer = () => {
 		if (card.type === "term") {
 			const blocks = card.content.blocks || [];
@@ -47,7 +49,7 @@ export function QuizFeedback({
 				</div>
 			);
 		}
-		// 其他題型直接顯示 answer
+		// Other types display answer directly
 		return (
 			<div className="text-xl font-bold dark:text-slate-200">
 				{card.content.answer}
@@ -58,19 +60,20 @@ export function QuizFeedback({
 	if (status === "success") {
 		return (
 			<div className="flex flex-col items-center gap-4 animate-in slide-in-from-bottom-4 fade-in">
-				<div className="flex items-center gap-2 text-emerald-600 text-xl font-bold">
-					<CheckCircle className="h-6 w-6" /> 正確！
+				<div className="flex items-center gap-2 text-emerald-600 text-xl font-bold drop-shadow-sm">
+					<CheckCircle className="h-6 w-6" />{" "}
+					{t("quiz.feedback.correct", "Correct!")}
 				</div>
 				{card.type === "fill_blank" && (
 					<p className="text-slate-500 text-sm">{card.content.meaning}</p>
 				)}
-				<Button
+				<GlassButton
 					onClick={onNext}
 					disabled={isProcessing}
-					className="bg-emerald-600 hover:bg-emerald-700"
+					className="bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-500"
 				>
-					下一題 (Enter)
-				</Button>
+					{t("quiz.feedback.next", "Next")}
+				</GlassButton>
 			</div>
 		);
 	}
@@ -78,13 +81,16 @@ export function QuizFeedback({
 	if (status === "failure") {
 		return (
 			<div className="flex flex-col items-center gap-6 animate-in slide-in-from-bottom-4 fade-in w-full max-w-lg">
-				<div className="flex items-center gap-2 text-destructive text-xl font-bold">
-					<XCircle className="h-6 w-6" /> 錯誤
+				<div className="flex items-center gap-2 text-destructive text-xl font-bold drop-shadow-sm">
+					<XCircle className="h-6 w-6" />{" "}
+					{t("quiz.feedback.incorrect", "Incorrect")}
 				</div>
 
 				{card.type !== "choice" && (
-					<div className="flex flex-col items-center gap-2 p-4 bg-slate-100 dark:bg-slate-900 rounded-lg w-full">
-						<span className="text-sm text-slate-500 font-medium">正確答案</span>
+					<div className="flex flex-col items-center gap-2 p-4 bg-slate-100/50 dark:bg-slate-900/50 rounded-2xl border border-slate-200 dark:border-slate-800 backdrop-blur-sm w-full">
+						<span className="text-sm text-slate-500 font-medium">
+							{t("quiz.feedback.correct_answer", "Correct Answer")}
+						</span>
 						{renderCorrectAnswer()}
 						<p className="text-sm text-muted-foreground mt-2">
 							{card.content.meaning}
@@ -92,14 +98,14 @@ export function QuizFeedback({
 					</div>
 				)}
 
-				<Button
+				<GlassButton
 					onClick={onNext}
 					disabled={isProcessing}
 					variant="secondary"
-					className="w-full sm:w-auto"
+					className="w-full sm:w-auto min-w-[120px]"
 				>
-					繼續
-				</Button>
+					{t("quiz.continue", "Continue")}
+				</GlassButton>
 			</div>
 		);
 	}

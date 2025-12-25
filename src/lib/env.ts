@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-// 定義你的環境變數 Schema (合約)
+// Define your environment variable Schema (contract)
 const envSchema = z.object({
 	VITE_FIREBASE_API_KEY: z.string().min(1, "API Key is required"),
 	VITE_FIREBASE_AUTH_DOMAIN: z.string().min(1),
@@ -12,13 +12,15 @@ const envSchema = z.object({
 	VITE_RECAPTCHA_SITE_KEY: z.string().min(1),
 });
 
-// 嘗試解析 import.meta.env
+// Try to parse import.meta.env
 const _env = envSchema.safeParse(import.meta.env);
 
 if (!_env.success) {
-	console.error("❌ 無效的環境變數:", _env.error.format());
-	throw new Error("環境變數驗證失敗，請檢查 .env 或 GitHub Secrets 是否缺漏。");
+	console.error("❌ Invalid environment variables:", _env.error.format());
+	throw new Error(
+		"Environment variable validation failed. Please check .env or GitHub Secrets.",
+	);
 }
 
-// 匯出驗證過的 env
+// Export verified env
 export const env = _env.data;

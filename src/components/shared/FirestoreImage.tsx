@@ -15,51 +15,65 @@ export function FirestoreImage({
 	alt,
 	...props
 }: FirestoreImageProps) {
-	const [imageSrc, setImageSrc] = useState<string | null>(null); // 改為 null
+	const [imageSrc, setImageSrc] = useState<string | null>(null); // Initialized to null
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState(false);
 
 	useEffect(() => {
-		// 1. 如果 src 為空，不處理 (直接渲染 null)
-		if (!src) {
-			setLoading(false);
-			setImageSrc(null);
-			return;
-		}
-
-		// 2. 如果是一般 URL 或舊 Base64，直接設定
-		if (!src.startsWith("chunked:")) {
-			setImageSrc(src);
-			setLoading(false);
-			return;
-		}
-
-		// 3. 分片圖片載入邏輯
 		let isMounted = true;
-		setLoading(true);
-		setError(false);
 
-		StorageService.loadImage(src)
-			.then((data) => {
-				if (isMounted) setImageSrc(data);
-			})
-			.catch((err) => {
+		const load = async () => {
+			// 1. Empty src
+			if (!src) {
 				if (isMounted) {
-					console.error("Image load failed", err);
+					setImageSrc(null);
+					setLoading(false);
+					setError(false);
+				}
+				return;
+			}
+
+			// 2. Simple URL
+			if (!src.startsWith("chunked:")) {
+				if (isMounted) {
+					setImageSrc(src);
+					setLoading(false);
+					setError(false);
+				}
+				return;
+			}
+
+			// 3. Chunked Image
+			if (isMounted) {
+				setLoading(true);
+				setError(false);
+			}
+
+			try {
+				const data = await StorageService.loadImage(src);
+				if (isMounted) {
+					setImageSrc(data);
+				}
+			} catch (err) {
+				console.error("Image load failed", err);
+				if (isMounted) {
 					setError(true);
 				}
-			})
-			.finally(() => {
-				if (isMounted) setLoading(false);
-			});
-			
-		return () => { isMounted = false; };
+			} finally {
+				if (isMounted) {
+					setLoading(false);
+				}
+			}
+		};
+
+		load();
+
+		return () => {
+			isMounted = false;
+		};
 	}, [src]);
 
-	// Early return for empty src if not loading
-	if (!src && !loading) return null;
-
-	// 錯誤狀態
+	// Error state
 	if (error) {
 		return (
 			<div
@@ -73,7 +87,7 @@ export function FirestoreImage({
 		);
 	}
 
-	// 載入中狀態
+	// Loading state
 	if (loading) {
 		return (
 			<div

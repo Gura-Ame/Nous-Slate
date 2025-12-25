@@ -1,7 +1,9 @@
-import { Lightbulb } from "lucide-react"; // 引入燈泡圖示
+import { Lightbulb } from "lucide-react";
 import { useCallback, useEffect, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { MarkdownDisplay } from "@/components/shared/MarkdownDisplay";
 import { Button } from "@/components/ui/button";
+import { GlassCard } from "@/components/ui/glass/GlassCard";
 import { cn } from "@/lib/utils";
 import type { Card } from "@/types/schema";
 
@@ -23,15 +25,15 @@ interface ChoiceModeProps {
 const keyMap: Record<string, number> = { A: 0, B: 1, C: 2, D: 3 };
 
 export function ChoiceMode({ card, status, onSubmit }: ChoiceModeProps) {
+	const { t } = useTranslation();
+
 	const shuffledOptions = useMemo(() => {
 		const answer = card.content.answer || "";
 		const options = card.content.options || [];
 
-		// 如果 options 陣列裡已經包含答案，代表這是我們新存的 [A, B, C, D]
 		if (options.includes(answer)) {
-			return options; // 不洗牌，直接用
+			return options;
 		}
-		// 舊格式 (options 是干擾項)，需要合併後洗牌
 		const opts = [answer, ...options];
 		return shuffleArray(opts);
 	}, [card.content.answer, card.content.options]);
@@ -62,24 +64,19 @@ export function ChoiceMode({ card, status, onSubmit }: ChoiceModeProps) {
 
 	return (
 		<div className="w-full max-w-5xl space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-			{/* Liquid Glass 題目區塊 */}
+			{/* Liquid Glass Stem */}
 			{card.content.stem && (
-				<div
-					className={cn(
-						"relative overflow-hidden rounded-2xl border border-white/40 dark:border-white/10 bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl shadow-xl p-8",
-						"transition-all duration-300 ease-out hover:shadow-2xl hover:border-white/60 hover:-translate-y-1 hover:scale-[1.005] cursor-default",
-					)}
+				<GlassCard
+					variant="hover-glow"
+					className="relative overflow-hidden p-8 cursor-default"
 				>
-					<div className="absolute -top-10 -left-10 w-32 h-32 bg-primary/20 rounded-full blur-3xl pointer-events-none" />
-					<div className="absolute -bottom-10 -right-10 w-32 h-32 bg-blue-500/20 rounded-full blur-3xl pointer-events-none" />
-
 					<div className="relative z-10 text-2xl md:text-2xl leading-relaxed text-slate-800 dark:text-slate-100 drop-shadow-sm prose dark:prose-invert max-w-none">
 						<MarkdownDisplay content={card.content.stem} />
 					</div>
-				</div>
+				</GlassCard>
 			)}
 
-			{/* 選項區塊 */}
+			{/* Options */}
 			<div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
 				{shuffledOptions.map((opt, idx) => {
 					let btnVariant: "outline" | "default" | "secondary" | "destructive" =
@@ -105,7 +102,7 @@ export function ChoiceMode({ card, status, onSubmit }: ChoiceModeProps) {
 
 					return (
 						<Button
-							// biome-ignore lint/suspicious/noArrayIndexKey: 選項內容可能重複
+							// biome-ignore lint/suspicious/noArrayIndexKey: Options might duplicate
 							key={`${opt}-${idx}`}
 							variant={btnVariant}
 							className={cn(
@@ -137,24 +134,20 @@ export function ChoiceMode({ card, status, onSubmit }: ChoiceModeProps) {
 			{status !== "question" && card.content.meaning && (
 				<div className="relative mt-8 animate-in slide-in-from-bottom-8 fade-in duration-500 z-20">
 					<div className="relative mx-auto max-w-3xl">
-						<div
-							className={cn(
-								// 樣式：灰白色系玻璃，無膠帶，無傾斜
-								"rounded-2xl border border-white/40 dark:border-white/10 p-8 shadow-xl",
-								"bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl",
-							)}
-						>
+						<GlassCard className="p-8" variant="hover-glow">
 							<div className="flex items-center gap-3 mb-4 text-slate-700 dark:text-slate-200">
 								<div className="p-2 bg-white/50 dark:bg-slate-800/50 rounded-full shadow-sm">
 									<Lightbulb className="w-6 h-6" />
 								</div>
-								<h3 className="text-xl font-bold">解析與筆記</h3>
+								<h3 className="text-xl font-bold">
+									{t("quiz.feedback.analysis", "Analysis & Notes")}
+								</h3>
 							</div>
 
 							<div className="text-slate-700 dark:text-slate-200 leading-relaxed font-medium">
 								<MarkdownDisplay content={card.content.meaning} />
 							</div>
-						</div>
+						</GlassCard>
 					</div>
 				</div>
 			)}

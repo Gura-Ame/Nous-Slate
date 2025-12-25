@@ -61,8 +61,7 @@ export function useBopomofo(
 
 	const processBackspace = useCallback(() => {
 		const current = bufferRef.current;
-
-		// 檢查是否為空
+		// Check if empty
 		const isEmpty =
 			!current.initial && !current.medial && !current.final && !current.tone;
 
@@ -70,8 +69,7 @@ export function useBopomofo(
 			if (onBackspaceEmpty) onBackspaceEmpty();
 			return;
 		}
-
-		// 依序刪除邏輯
+		// Order-based deletion logic
 		const nextBuffer = { ...current };
 		if (current.tone) nextBuffer.tone = "";
 		else if (current.final) nextBuffer.final = "";
@@ -113,6 +111,6 @@ export function useBopomofo(
 		processInput,
 		processBackspace,
 		resetBuffer: () => updateState(EMPTY_CHAR),
-		setInternalBuffer, // 匯出這個新方法
+		setInternalBuffer, // Export this helper method
 	};
 }

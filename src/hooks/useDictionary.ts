@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { toast } from "sonner";
 
-// 1. 定義 API 回傳的資料結構
+// 1. Define API response structure
 interface Phonetic {
 	text?: string;
 	audio?: string;
@@ -27,7 +27,7 @@ interface DictionaryEntry {
 	sourceUrls?: string[];
 }
 
-// 這是 Hook 回傳給前端使用的精簡結構
+// Simplified structure for frontend consumption
 interface DictionaryResult {
 	word: string;
 	phonetic: string;
@@ -47,16 +47,16 @@ export function useDictionary() {
 			);
 			if (!res.ok) throw new Error("Not found");
 
-			// 2. 在這裡轉型 (Cast) 為我們定義的介面陣列
+			// 2. Cast response to defined interface array
 			const data = (await res.json()) as DictionaryEntry[];
 			const entry = data[0];
 
-			// 3. 移除 :any，現在 TypeScript 知道 p 是 Phonetic 類型
+			// 3. Removed :any, now TypeScript knows p is Type Phonetic
 			const audioSrc =
 				entry.phonetics.find((p) => p.audio?.includes("-us.mp3"))?.audio ||
 				entry.phonetics.find((p) => p.audio)?.audio;
 
-			// 4. 移除 :any，現在 TypeScript 知道 m 是 Meaning, d 是 Definition
+			// 4. Removed :any, now TypeScript knows m is Meaning, d is Definition
 			const meanings = entry.meanings
 				.map((m) => {
 					const partOfSpeech = m.partOfSpeech; // n. v. adj.
@@ -79,7 +79,7 @@ export function useDictionary() {
 			};
 		} catch (e) {
 			console.error(e);
-			toast.error("字典查無此字");
+			toast.error("Word not found in dictionary");
 			return null;
 		} finally {
 			setLoading(false);

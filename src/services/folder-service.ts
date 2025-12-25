@@ -16,7 +16,7 @@ import type { Folder } from "@/types/schema";
 const COLLECTION_NAME = "folders";
 
 export const FolderService = {
-	// 建立 (新增 color, isPublic)
+	// Create (Added color, isPublic)
 	createFolder: async (
 		userId: string,
 		name: string,
@@ -33,7 +33,7 @@ export const FolderService = {
 		return { id: docRef.id, name };
 	},
 
-	// 取得使用者資料夾
+	// Get user folders
 	getUserFolders: async (userId: string) => {
 		const q = query(
 			collection(db, COLLECTION_NAME),
@@ -44,7 +44,7 @@ export const FolderService = {
 		return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Folder);
 	},
 
-	// 新增：取得所有公開資料夾
+	// New: Get all public folders
 	getPublicFolders: async () => {
 		const q = query(
 			collection(db, COLLECTION_NAME),
@@ -55,7 +55,7 @@ export const FolderService = {
 		return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Folder);
 	},
 
-	// 更新資料夾
+	// Update folder
 	updateFolder: async (
 		folderId: string,
 		data: { name?: string; color?: string; isPublic?: boolean },

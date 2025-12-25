@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
@@ -11,6 +12,7 @@ import { useQuizStore } from "@/store/useQuizStore";
 import type { Card } from "@/types/schema";
 
 export function useQuizController() {
+	const { t } = useTranslation();
 	const { deckId } = useParams();
 	const navigate = useNavigate();
 	const { user, loading: authLoading } = useAuth();
@@ -31,7 +33,7 @@ export function useQuizController() {
 	const [isProcessing, setIsProcessing] = useState(false);
 	const [showExitDialog, setShowExitDialog] = useState(false);
 
-	// 1. 初始化資料
+	// 1. Initialize data
 	useEffect(() => {
 		resetQuiz();
 		setIsLoading(true);
@@ -45,23 +47,30 @@ export function useQuizController() {
 				if (deckId === "review") {
 					data = await ReviewService.getDueCards(user.uid);
 					if (data.length === 0) {
-						toast.info("目前沒有需要複習的卡片");
+						toast.info(
+							t("quiz.controller.no_review_cards", "No cards due for review"),
+						);
 						navigate("/review");
 						return;
 					}
 				} else if (deckId) {
-					// 檢查積分 (前端樂觀檢查)
+					// Check points (Optimistic check)
 					const profile = await PointsService.getUserProfile(user.uid);
 					if ((profile?.points || 0) <= 0) {
-						toast.error("積分不足，請前往領取獎勵");
+						toast.error(
+							t(
+								"quiz.controller.insufficient_points_reward",
+								"Insufficient points",
+							),
+						);
 						navigate("/ad-center");
 						return;
 					}
 
-					// 載入卡片
+					// Load cards
 					const [cardData] = await Promise.all([
 						CardService.getCardsByDeck(deckId),
-						// 更新興趣標籤 (Side Effect)
+						// Update interest tags (Side Effect)
 						DeckService.getUserDecks(user.uid)
 							.then((decks) => {
 								const currentDeck = decks.find((d) => d.id === deckId);
@@ -77,12 +86,12 @@ export function useQuizController() {
 				if (data.length > 0) {
 					startQuiz(data);
 				} else {
-					toast.error("題庫無卡片");
+					toast.error(t("quiz.controller.deck_empty", "Deck is empty"));
 					navigate(-1);
 				}
 			} catch (e) {
 				console.error(e);
-				toast.error("載入失敗");
+				toast.error(t("quiz.controller.load_failed", "Failed to load"));
 				navigate(-1);
 			} finally {
 				setIsLoading(false);
@@ -93,9 +102,9 @@ export function useQuizController() {
 		return () => {
 			resetQuiz();
 		};
-	}, [deckId, user, navigate, resetQuiz, startQuiz]);
+	}, [deckId, user, navigate, resetQuiz, startQuiz, t]);
 
-	// 2. 處理下一題 (含扣分)
+	// 2. Handle next card (including cost deduction)
 	const handleNext = useCallback(async () => {
 		if (isProcessing) return;
 		setIsProcessing(true);
@@ -106,11 +115,16 @@ export function useQuizController() {
 					user.uid,
 					-0.5,
 					"quiz_cost",
-					"練習扣點",
+					t("quiz.controller.quiz_cost_label", "Quiz Cost"),
 				);
 			} catch (error) {
 				console.error(error);
-				toast.error("積分不足！請前往積分中心");
+				toast.error(
+					t(
+						"quiz.controller.insufficient_points",
+						"Insufficient points! Please visit Points Center",
+					),
+				);
 				navigate("/ad-center");
 				return;
 			}
@@ -121,9 +135,9 @@ export function useQuizController() {
 		setTimeout(() => {
 			setIsProcessing(false);
 		}, 300);
-	}, [isProcessing, user, navigate, nextCard]);
+	}, [isProcessing, user, navigate, nextCard, t]);
 
-	// 3. 處理答案提交
+	// 3. Handle answer submission
 	const handleAnswer = useCallback(
 		async (isCorrect: boolean, grade: Grade = isCorrect ? 5 : 1) => {
 			if (isProcessing) return;
@@ -144,8 +158,15 @@ export function useQuizController() {
 						user.uid,
 						-0.2,
 						"quiz_penalty",
-						"答錯懲罰",
-					).catch(() => toast.error("積分不足扣抵"));
+						t("quiz.controller.quiz_penalty_label", "Wrong Answer Penalty"),
+					).catch(() =>
+						toast.error(
+							t(
+								"quiz.controller.penalty_failed",
+								"Insufficient points for penalty",
+							),
+						),
+					);
 				}
 			}
 
@@ -158,10 +179,10 @@ export function useQuizController() {
 				setIsProcessing(false);
 			}
 		},
-		[isProcessing, user, deckId, currentCard, submitAnswer, handleNext],
+		[isProcessing, user, deckId, currentCard, submitAnswer, handleNext, t],
 	);
 
-	// 4. 退出控制
+	// 4. Exit control
 	const handleExitClick = () => {
 		if (["question", "success", "failure"].includes(status)) {
 			setShowExitDialog(true);

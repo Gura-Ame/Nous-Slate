@@ -20,13 +20,13 @@ import type { Card, CardContent, CardType } from "@/types/schema";
 const COLLECTION_NAME = "cards";
 
 export const CardService = {
-	// 1. 取得某個題庫的所有卡片
+	// 1. Get all cards for a specific deck
 	getCardsByDeck: async (deckId: string) => {
 		try {
 			const q = query(
 				collection(db, COLLECTION_NAME),
 				where("deckId", "==", deckId),
-				orderBy("createdAt", "asc"), // 按照建立順序排列
+				orderBy("createdAt", "asc"), // Sort by creation order
 			);
 
 			const querySnapshot = await getDocs(q);
@@ -40,10 +40,10 @@ export const CardService = {
 		}
 	},
 
-	// 2. 新增卡片
+	// 2. Create card
 	createCard: async (deckId: string, type: CardType, content: CardContent) => {
 		try {
-			// 1. 新增卡片
+			// 1. Create card document
 			const docRef = await addDoc(collection(db, COLLECTION_NAME), {
 				deckId,
 				type,
@@ -53,10 +53,10 @@ export const CardService = {
 				updatedAt: serverTimestamp(),
 			});
 
-			// 2. 更新對應 Deck 的 cardCount (+1)
+			// 2. Update cardCount in corresponding Deck (+1)
 			const deckRef = doc(db, "decks", deckId);
 			await updateDoc(deckRef, {
-				"stats.cardCount": increment(1), // 原子操作：加 1
+				"stats.cardCount": increment(1), // Atomic operation: increment by 1
 				updatedAt: serverTimestamp(),
 			});
 
@@ -67,12 +67,12 @@ export const CardService = {
 		}
 	},
 
-	// 3. 更新卡片
+	// 3. Update card
 	updateCard: async (cardId: string, content: Partial<CardContent>) => {
 		try {
 			const docRef = doc(db, COLLECTION_NAME, cardId);
 			await updateDoc(docRef, {
-				content: content, // 注意：這裡會覆蓋整個 content 物件，若只需局部更新需調整寫法
+				content: content, // NOTE: This overwrites the entire content object. Adjust if partial update is needed.
 				updatedAt: serverTimestamp(),
 			});
 		} catch (error) {
@@ -81,23 +81,23 @@ export const CardService = {
 		}
 	},
 
-	// 4. 刪除卡片
+	// 4. Delete card
 	deleteCard: async (cardId: string) => {
 		try {
-			// 1. 先抓出卡片資料，才知道它是屬於哪個 Deck
+			// 1. Get card data first to identify parent Deck
 			const cardRef = doc(db, COLLECTION_NAME, cardId);
 			const cardSnap = await getDoc(cardRef);
 
 			if (cardSnap.exists()) {
 				const deckId = cardSnap.data().deckId;
 
-				// 2. 刪除卡片
+				// 2. Delete card document
 				await deleteDoc(cardRef);
 
-				// 3. 更新 Deck 的 cardCount (-1)
+				// 3. Update cardCount in Deck (-1)
 				const deckRef = doc(db, "decks", deckId);
 				await updateDoc(deckRef, {
-					"stats.cardCount": increment(-1), // 原子操作：減 1
+					"stats.cardCount": increment(-1), // Atomic operation: decrement by 1
 					updatedAt: serverTimestamp(),
 				});
 			}

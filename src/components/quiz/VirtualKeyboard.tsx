@@ -1,110 +1,99 @@
-import { ArrowBigUp, Delete } from "lucide-react";
+import { Delete } from "lucide-react";
+import { useCallback, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+
+const ROWS = [
+	["ㄅ", "ㄆ", "ㄇ", "ㄈ", "ㄉ", "ㄊ", "ㄋ", "ㄌ", "ㄍ", "ㄎ", "ㄏ"],
+	["ㄐ", "ㄑ", "ㄒ", "ㄓ", "ㄔ", "ㄕ", "ㄖ", "ㄗ", "ㄘ", "ㄙ"],
+	["ㄧ", "ㄨ", "ㄩ", "ㄚ", "ㄛ", "ㄜ", "ㄝ", "ㄞ", "ㄟ", "ㄠ", "ㄡ"],
+	["ㄢ", "ㄣ", "ㄤ", "ㄥ", "ㄦ"],
+	["˙", "ˊ", "ˇ", "ˋ"],
+];
 
 interface VirtualKeyboardProps {
 	onInput: (char: string) => void;
 	onDelete: () => void;
-	className?: string;
 }
 
-const ROWS = [
-	// Row 1: 加入 Backspace (DEL) 在最後
-	["ㄅ", "ㄉ", "ˇ", "ˋ", "ㄓ", "ˊ", "˙", "ㄚ", "ㄞ", "ㄢ", "ㄦ", "DEL"],
-	// Row 2
-	["ㄆ", "ㄊ", "ㄍ", "ㄐ", "ㄔ", "ㄗ", "ㄧ", "ㄛ", "ㄟ", "ㄣ"],
-	// Row 3
-	["ㄇ", "ㄋ", "ㄎ", "ㄑ", "ㄕ", "ㄘ", "ㄨ", "ㄜ", "ㄠ", "ㄤ", "ㄥ"],
-	// Row 4
-	["ㄈ", "ㄌ", "ㄏ", "ㄒ", "ㄖ", "ㄙ", "ㄩ", "ㄝ", "ㄡ"],
-];
+export function VirtualKeyboard({ onInput, onDelete }: VirtualKeyboardProps) {
+	const { t } = useTranslation();
 
-export function VirtualKeyboard({
-	onInput,
-	onDelete,
-	className,
-}: VirtualKeyboardProps) {
-	const handlePress = (e: React.PointerEvent, action: () => void) => {
-		e.preventDefault();
-		action();
-	};
+	const handlePress = useCallback(
+		(e: React.PointerEvent, action: () => void) => {
+			e.preventDefault();
+			action();
+		},
+		[],
+	);
+
+	// Handle physical keyboard mapping for certain keys if needed (optional)
+	useEffect(() => {
+		const handleKeyDown = (e: KeyboardEvent) => {
+			if (e.key === "Backspace") {
+				onDelete();
+			} else if (e.key === " ") {
+				onInput(" ");
+			}
+		};
+		window.addEventListener("keydown", handleKeyDown);
+		return () => window.removeEventListener("keydown", handleKeyDown);
+	}, [onInput, onDelete]);
 
 	return (
-		<div
-			className={cn(
-				// 修正：移除 border-slate-300，背景改為更乾淨的顏色
-				"fixed bottom-0 left-0 right-0 bg-slate-200 dark:bg-slate-900 p-1 pb-safe z-50 select-none touch-none shadow-inner",
-				className,
-			)}
-		>
+		<div className="w-full bg-slate-200/80 dark:bg-slate-900/80 p-2 border-t backdrop-blur-md select-none touch-none h-auto sm:h-auto">
 			<div className="max-w-5xl mx-auto flex flex-col gap-1.5 p-1">
 				{ROWS.map((row, rowIndex) => (
-					// biome-ignore lint/suspicious/noArrayIndexKey: 鍵盤佈局固定
+					// biome-ignore lint/suspicious/noArrayIndexKey: Standard order for options
 					<div key={rowIndex} className="flex justify-center gap-1 w-full">
-						{/* Row 4 左側裝飾 Shift */}
+						{/* Row 4 left decoration Shift */}
 						{rowIndex === 3 && (
+							<div className="flex-1 min-w-[30px] sm:min-w-[40px]" />
+						)}
+
+						{row.map((char) => (
 							<Button
-								variant="ghost"
-								className="flex-[1.5] h-10 sm:h-12 bg-slate-300 dark:bg-slate-800 shadow-sm rounded-md"
-								disabled
+								key={char}
+								variant="secondary"
+								className="flex-1 min-w-0 h-10 sm:h-12 bg-white dark:bg-slate-800 shadow-sm rounded-md active:scale-95 transition-transform text-slate-700 dark:text-slate-200 font-serif text-lg p-0"
+								onPointerDown={(e) => handlePress(e, () => onInput(char))}
 							>
-								<ArrowBigUp className="h-5 w-5 text-slate-500" />
+								{char}
+							</Button>
+						))}
+
+						{/* Row 1: Add Backspace (DEL) at the end */}
+						{rowIndex === 0 && (
+							<Button
+								key="del"
+								variant="secondary"
+								className="flex-[1.5] h-10 sm:h-12 bg-slate-300 dark:bg-slate-700 shadow-sm rounded-md active:scale-95 transition-transform"
+								onPointerDown={(e) => {
+									e.stopPropagation();
+									handlePress(e, onDelete);
+								}}
+							>
+								<Delete className="h-5 w-5 text-slate-700 dark:text-slate-200" />
 							</Button>
 						)}
 
-						{row.map((char) => {
-							// 特殊處理 Backspace (在第一排最後一個)
-							if (char === "DEL") {
-								return (
-									<Button
-										key="del"
-										variant="secondary"
-										className="flex-[1.5] h-10 sm:h-12 bg-slate-300 dark:bg-slate-700 shadow-sm rounded-md active:scale-95 transition-transform"
-										onPointerDown={(e) => handlePress(e, onDelete)}
-									>
-										<Delete className="h-5 w-5 text-slate-700 dark:text-slate-200" />
-									</Button>
-								);
-							}
-
-							return (
-								<Button
-									key={char}
-									variant="secondary"
-									className="flex-1 h-10 sm:h-12 text-lg sm:text-xl font-serif bg-white dark:bg-slate-800 shadow-[0_1px_0_rgba(0,0,0,0.1)] active:shadow-none active:translate-y-px rounded-md px-0"
-									onPointerDown={(e) => handlePress(e, () => onInput(char))}
-								>
-									{char}
-								</Button>
-							);
-						})}
-
-						{/* Row 4 右側留白或放 Enter (這裡留白讓版面平衡) */}
-						{rowIndex === 3 && <div className="flex-[1.5]" />}
+						{/* Row 4 right decoration */}
+						{rowIndex === 3 && (
+							<div className="flex-1 min-w-[30px] sm:min-w-[40px]" />
+						)}
 					</div>
 				))}
 
-				{/* Row 5: 空白鍵 */}
-				<div className="flex justify-center gap-1.5 mt-1">
-					<Button
-						variant="ghost"
-						className="w-12 bg-slate-300 dark:bg-slate-700 text-slate-500 rounded-md"
-					>
-						123
-					</Button>
-					<Button
-						variant="ghost"
-						className="w-12 bg-slate-300 dark:bg-slate-700 text-slate-500 rounded-md"
-					>
-						🌐
-					</Button>
+				{/* Bottom row: Space and Enter */}
+				<div className="flex justify-center gap-2 mt-1">
+					<div className="flex-1" />
 
 					<Button
 						variant="secondary"
 						className="flex-4 h-10 sm:h-12 bg-white dark:bg-slate-800 shadow-sm rounded-md text-slate-400 font-serif"
 						onPointerDown={(e) => handlePress(e, () => onInput(" "))}
 					>
-						一聲 (Space)
+						{t("quiz.first_tone", "1st Tone")} (Space)
 					</Button>
 
 					<Button
@@ -113,6 +102,7 @@ export function VirtualKeyboard({
 					>
 						Enter
 					</Button>
+					<div className="flex-1" />
 				</div>
 			</div>
 		</div>

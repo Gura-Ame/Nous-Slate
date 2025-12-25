@@ -7,15 +7,15 @@ function Card({ className, ...props }: React.ComponentProps<"div">) {
 		<div
 			data-slot="card"
 			className={cn(
-				// 1. 基礎樣式 (Base)
+				// 1. Base Style
 				"bg-card text-card-foreground flex flex-col gap-6 rounded-xl border py-6 shadow-sm",
 
-				// 2. 新增：Hover 動畫效果 (Animation)
-				// transition-all: 讓所有變化都有過渡動畫
-				// duration-300: 動畫時間 0.3秒
-				// hover:-translate-y-1: 滑鼠移上去時，卡片往上浮動 4px
-				// hover:shadow-lg: 浮起來時增加陰影，更有立體感
-				// hover:border-primary/50: 邊框微微變色 (可選，增加互動感)
+				// 2. Added: Hover Animation Effect
+				// transition-all: Smooth transitions for all changes
+				// duration-300: Animation duration 0.3s
+				// hover:-translate-y-1: Float up 4px on hover
+				// hover:shadow-lg: Increase shadow on hover for depth
+				// hover:border-primary/50: Slight border color change (optional)
 				"transition-all duration-300 ease-in-out hover:-translate-y-1 hover:shadow-lg dark:hover:shadow-primary/10 hover:border-primary/50",
 
 				className,

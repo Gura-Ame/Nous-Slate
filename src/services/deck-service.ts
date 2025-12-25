@@ -18,7 +18,7 @@ import type { Deck } from "@/types/schema";
 const COLLECTION_NAME = "decks";
 
 export const DeckService = {
-	// 1. 建立新題庫
+	// 1. Create new deck
 	createDeck: async (userId: string, title: string, description?: string) => {
 		try {
 			const docRef = await addDoc(collection(db, COLLECTION_NAME), {
@@ -26,7 +26,7 @@ export const DeckService = {
 				title,
 				description: description || "",
 				tags: [],
-				isPublic: false, // 預設私有
+				isPublic: false, // Default to private
 				stats: {
 					cardCount: 0,
 					subscribers: 0,
@@ -42,7 +42,7 @@ export const DeckService = {
 		}
 	},
 
-	// 2. 取得使用者的所有題庫
+	// 2. Get all decks for a user
 	getUserDecks: async (userId: string) => {
 		try {
 			const q = query(
@@ -52,7 +52,7 @@ export const DeckService = {
 			);
 
 			const querySnapshot = await getDocs(q);
-			// 這裡需要手動轉型，因為 Firestore 返回的是 DocumentData
+			// Needs manual casting as Firestore returns DocumentData
 			return querySnapshot.docs.map((doc) => ({
 				id: doc.id,
 				...doc.data(),
@@ -67,11 +67,11 @@ export const DeckService = {
 		try {
 			const batch = writeBatch(db);
 
-			// 1. 刪除該 Deck
+			// 1. Delete the Deck document
 			const deckRef = doc(db, COLLECTION_NAME, deckId);
 			batch.delete(deckRef);
 
-			// 2. 找出所有關聯的 Cards 並加入刪除排程
+			// 2. Find all associated Cards and add to batch
 			const cardsQuery = query(
 				collection(db, "cards"),
 				where("deckId", "==", deckId),
@@ -81,7 +81,7 @@ export const DeckService = {
 				batch.delete(doc.ref);
 			});
 
-			// 3. 找出所有關聯的 Reviews 並加入刪除排程
+			// 3. Find all associated Reviews and add to batch
 			const reviewsQuery = query(
 				collection(db, "reviews"),
 				where("deckId", "==", deckId),
@@ -91,7 +91,7 @@ export const DeckService = {
 				batch.delete(doc.ref);
 			});
 
-			// 4. 一次提交所有刪除操作 (注意：若總數超過 500 筆會報錯，需進階處理分批)
+			// 4. Commit all deletions (NOTE: Max 500 ops per batch, requires chunking for large datasets)
 			await batch.commit();
 
 			console.log(`Deck ${deckId} and related data deleted successfully.`);
@@ -101,13 +101,13 @@ export const DeckService = {
 		}
 	},
 
-	// 4. 取得公開題庫列表
+	// 4. Get public decks list
 	getPublicDecks: async () => {
 		try {
 			const q = query(
 				collection(db, COLLECTION_NAME),
-				where("isPublic", "==", true), // 只抓公開的
-				orderBy("updatedAt", "desc"), // 按更新時間排序
+				where("isPublic", "==", true), // Only public decks
+				orderBy("updatedAt", "desc"), // Sort by last update
 			);
 
 			const querySnapshot = await getDocs(q);
@@ -121,7 +121,7 @@ export const DeckService = {
 		}
 	},
 
-	// 5. 更新題庫資訊
+	// 5. Update deck information
 	updateDeck: async (deckId: string, data: Partial<Deck>) => {
 		try {
 			const docRef = doc(db, COLLECTION_NAME, deckId);
@@ -138,7 +138,7 @@ export const DeckService = {
 	moveDeckToFolder: async (deckId: string, folderId: string | null) => {
 		const deckRef = doc(db, "decks", deckId);
 		await updateDoc(deckRef, {
-			folderId: folderId, // null 代表移出資料夾 (變成未分類)
+			folderId: folderId, // null means move out of folder (becomes uncategorized)
 		});
 	},
 
@@ -146,11 +146,11 @@ export const DeckService = {
 		const q = query(
 			collection(db, COLLECTION_NAME),
 			where("folderId", "==", folderId),
-			where("ownerId", "==", userId), // 關鍵：必須加上這行，才能通過安全規則
+			where("ownerId", "==", userId), // CRITICAL: Security rule requirement
 		);
 		const snap = await getDocs(q);
 
-		// 使用 Batch 寫入，效能更好且原子化
+		// Use Batch for better performance and atomicity
 		const batch = writeBatch(db);
 		snap.docs.forEach((doc) => {
 			batch.update(doc.ref, {

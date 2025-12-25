@@ -1,5 +1,6 @@
 import { Download, FileJson, RefreshCw, Upload } from "lucide-react";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,6 +14,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { DataService } from "@/services/data-service";
 
 export function DataManagement() {
+	const { t } = useTranslation();
 	const { user } = useAuth();
 	const [isImporting, setIsImporting] = useState(false);
 	const [isExporting, setIsExporting] = useState(false);
@@ -22,10 +24,12 @@ export function DataManagement() {
 		setIsExporting(true);
 		try {
 			await DataService.exportFullBackup(user.uid);
-			toast.success("備份檔案已下載");
+			toast.success(
+				t("data_management.export_success", "Backup file downloaded"),
+			);
 		} catch (e) {
 			console.error(e);
-			toast.error("匯出失敗");
+			toast.error(t("data_management.export_error", "Export failed"));
 		} finally {
 			setIsExporting(false);
 		}
@@ -41,13 +45,20 @@ export function DataManagement() {
 			try {
 				const json = event.target?.result as string;
 				await DataService.importData(user.uid, json);
-				toast.success("資料匯入成功！");
+				toast.success(
+					t("data_management.import_success", "Data imported successfully!"),
+				);
 			} catch (error) {
 				console.error(error);
-				toast.error("匯入失敗，請檢查檔案格式");
+				toast.error(
+					t(
+						"data_management.import_error",
+						"Import failed, please check file format",
+					),
+				);
 			} finally {
 				setIsImporting(false);
-				// 清空 input 讓同個檔案可以再選一次
+				// Reset input so the same file can be selected again
 				e.target.value = "";
 			}
 		};
@@ -57,14 +68,17 @@ export function DataManagement() {
 	return (
 		<Card>
 			<CardHeader>
-				<CardTitle>資料管理</CardTitle>
+				<CardTitle>{t("data_management.title", "Data Management")}</CardTitle>
 				<CardDescription>
-					匯出您的所有學習資料以進行備份，或從備份檔案還原。
+					{t(
+						"data_management.description",
+						"Export all your study data for backup, or restore from a backup file.",
+					)}
 				</CardDescription>
 			</CardHeader>
 			<CardContent className="space-y-4">
 				<div className="flex flex-col gap-4 sm:flex-row">
-					{/* 匯出按鈕 */}
+					{/* Export button */}
 					<Button
 						variant="outline"
 						className="flex-1 gap-2 h-20 sm:h-24 text-lg border-2"
@@ -77,14 +91,16 @@ export function DataManagement() {
 							<Download className="h-6 w-6" />
 						)}
 						<div className="flex flex-col items-start">
-							<span className="font-bold">匯出完整備份</span>
+							<span className="font-bold">
+								{t("data_management.export_backup", "Export Full Backup")}
+							</span>
 							<span className="text-xs font-normal text-muted-foreground">
-								包含所有資料夾與題庫
+								Contains all folders and decks
 							</span>
 						</div>
 					</Button>
 
-					{/* 匯入按鈕 (隱藏 input 透過 label 觸發) */}
+					{/* Import button (hidden input triggered by label) */}
 					<div className="flex-1 relative">
 						<input
 							type="file"
@@ -104,9 +120,11 @@ export function DataManagement() {
 								<Upload className="h-6 w-6" />
 							)}
 							<div className="flex flex-col items-start">
-								<span className="font-bold">匯入資料</span>
+								<span className="font-bold">
+									{t("data_management.import_data", "Import Data")}
+								</span>
 								<span className="text-xs font-normal text-muted-foreground">
-									支援完整備份檔或單一題庫 JSON
+									Supports full backup or specific deck JSON
 								</span>
 							</div>
 						</Button>
@@ -115,12 +133,13 @@ export function DataManagement() {
 
 				<div className="bg-slate-50 dark:bg-slate-900 p-4 rounded-lg text-sm text-muted-foreground">
 					<p className="font-bold mb-1 flex items-center gap-2">
-						<FileJson className="h-4 w-4" /> 支援格式：
+						<FileJson className="h-4 w-4" />{" "}
+						{t("data_management.formats", "Supported Formats:")}
 					</p>
 					<ul className="list-disc list-inside space-y-1 ml-1">
-						<li>完整備份包 (Backup)</li>
-						<li>單一資料夾 (Folder)</li>
-						<li>單一題庫 (Deck)</li>
+						<li>{t("data_management.backup", "Full Backup Pack")}</li>
+						<li>{t("data_management.folder", "Single Folder")}</li>
+						<li>{t("data_management.deck", "Single Deck")}</li>
 					</ul>
 				</div>
 			</CardContent>

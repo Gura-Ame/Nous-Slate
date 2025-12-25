@@ -1,8 +1,8 @@
 "use client";
 
 import { Check, Info, TriangleAlert, X } from "lucide-react";
-import { useTheme } from "@/components/theme-context";
 import { Toaster as Sonner, type ToasterProps } from "sonner";
+import { useTheme } from "@/components/theme-context";
 
 const Toaster = ({ ...props }: ToasterProps) => {
 	const { theme = "system" } = useTheme();
@@ -23,13 +23,13 @@ const Toaster = ({ ...props }: ToasterProps) => {
 			toastOptions={{
 				classNames: {
 					toast:
-						// 1. 背景半透明 + 高斯模糊
+						// 1. Transparent background + Gaussian blur
 						"group toast group-[.toaster]:!bg-white/80 dark:group-[.toaster]:!bg-slate-950/80 group-[.toaster]:backdrop-blur-xl " +
-						// 2. 邊框：細緻的白色/深色半透明邊框
+						// 2. Border: Fine white/dark semi-transparent border
 						"group-[.toaster]:!border-white/40 dark:group-[.toaster]:!border-white/10 group-[.toaster]:border " +
-						// 3. 陰影：深邃的陰影增加層次
+						// 3. Shadow: Deep shadow for depth
 						"group-[.toaster]:!shadow-2xl dark:group-[.toaster]:!shadow-black/50 " +
-						// 4. 文字與佈局
+						// 4. Text and Layout
 						"group-[.toaster]:!text-slate-900 dark:group-[.toaster]:!text-slate-100 rounded-2xl p-4 gap-3 font-sans items-start",
 
 					description:

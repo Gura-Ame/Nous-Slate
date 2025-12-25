@@ -1,7 +1,8 @@
 import { Volume2 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { FirestoreImage } from "@/components/shared/FirestoreImage";
-import { Button } from "@/components/ui/button";
+import { GlassButton } from "@/components/ui/glass/GlassButton";
 import { speak } from "@/lib/tts";
 import { cn } from "@/lib/utils";
 import { useSettingsStore } from "@/store/useSettingsStore";
@@ -14,11 +15,11 @@ interface FlashcardModeProps {
 }
 
 export function FlashcardMode({ card, status, onRate }: FlashcardModeProps) {
+	const { t } = useTranslation();
 	const [isFlipped, setIsFlipped] = useState(false);
 	const { autoPlayAudio } = useSettingsStore();
 
-	// 1. 重置與音效邏輯
-	// 使用 pattern: Reset state when prop changes during render
+	// 1. Reset state when prop changes
 	const [prevCardId, setPrevCardId] = useState(card.id);
 	if (card.id !== prevCardId) {
 		setPrevCardId(card.id);
@@ -26,7 +27,6 @@ export function FlashcardMode({ card, status, onRate }: FlashcardModeProps) {
 	}
 
 	useEffect(() => {
-		// 狀態改變時的音效播放 (保持在 Effect)
 		if (status === "question" && autoPlayAudio) {
 			const timer = setTimeout(() => {
 				if (card.content.audioUrl) {
@@ -64,99 +64,117 @@ export function FlashcardMode({ card, status, onRate }: FlashcardModeProps) {
 	};
 
 	return (
-		// 修改：h-[400px] 改為 h-[50vh] max-h-[500px]，確保在各種螢幕都大致居中
 		<div className="w-full max-w-md perspective-1000 h-[50vh] max-h-[500px] flex flex-col justify-center">
-			{/* biome-ignore lint: This element is a complex flip card container, and its button behavior is manually handled for specific styling needs. */}
-			<div
+			<button
+				type="button"
 				className={cn(
-					"relative w-full h-full transition-transform duration-500 transform-style-3d cursor-pointer",
+					"relative w-full h-full transition-transform duration-500 transform-style-3d cursor-pointer group text-left appearance-none bg-transparent border-none p-0 outline-none block font-inherit",
 					isFlipped ? "rotate-y-180" : "",
 				)}
-				role="button"
-				tabIndex={0}
-				onKeyDown={(e) => {
-					if (e.key === "Enter" || e.key === " ") {
-						e.preventDefault();
-						setIsFlipped(!isFlipped);
-					}
-				}}
 				onClick={() => setIsFlipped(!isFlipped)}
 			>
-				{/* --- Front (正面) --- */}
+				{/* --- Front --- */}
 				<div
 					className={cn(
-						"absolute inset-0 backface-hidden bg-white dark:bg-slate-900 border-2 rounded-2xl flex flex-col items-center justify-center p-8 shadow-xl hover:shadow-2xl transition-all",
+						"absolute inset-0 backface-hidden",
+						"rounded-3xl border border-white/50 dark:border-white/10",
+						"bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl",
+						"shadow-xl hover:shadow-2xl hover:border-white/80 dark:hover:border-white/20 transition-all duration-300",
+						"flex flex-col items-center justify-center p-8",
 						isFlipped ? "invisible pointer-events-none" : "visible",
 					)}
 				>
-					{card.content.image ? (
-						<>
-							<FirestoreImage // 改用這個
-								src={card.content.image}
-								alt="Flashcard"
-								className="h-32 w-auto object-contain mb-4 rounded-md"
-							/>
-							<h2 className="text-3xl font-bold mb-2 text-center wrap-break-word w-full">
-								{card.content.stem}
-							</h2>
-						</>
-					) : (
-						<div className="flex-1 flex items-center justify-center w-full">
-							<h2 className="text-6xl font-bold text-center wrap-break-word leading-tight">
-								{card.content.stem}
-							</h2>
-						</div>
-					)}
+					{/* Inner Highlight */}
+					<div className="absolute inset-0 bg-gradient-to-br from-white/40 to-transparent dark:from-white/5 pointer-events-none rounded-3xl" />
 
-					<p className="text-slate-400 text-sm animate-pulse mt-auto pt-4">
-						點擊翻面 (Space)
-					</p>
+					<div className="relative z-10 flex flex-col items-center justify-center w-full h-full">
+						{card.content.image ? (
+							<>
+								<FirestoreImage
+									src={card.content.image}
+									alt="Flashcard"
+									className="h-32 w-auto object-contain mb-4 rounded-xl shadow-sm"
+								/>
+								<h2 className="text-3xl font-bold mb-2 text-center text-slate-800 dark:text-slate-100 wrap-break-word w-full">
+									{card.content.stem}
+								</h2>
+							</>
+						) : (
+							<div className="flex-1 flex items-center justify-center w-full">
+								<h2 className="text-5xl md:text-6xl font-bold text-center text-slate-800 dark:text-slate-100 wrap-break-word leading-tight">
+									{card.content.stem}
+								</h2>
+							</div>
+						)}
+
+						<p className="text-slate-500/70 dark:text-slate-400/70 text-sm animate-pulse mt-auto pt-4 font-medium uppercase tracking-wider">
+							{t("quiz.flashcard.flip_hint", "Click to flip (Space)")}
+						</p>
+					</div>
 				</div>
 
-				{/* --- Back (背面) --- */}
+				{/* --- Back --- */}
 				<div
 					className={cn(
-						"absolute inset-0 backface-hidden bg-slate-50 dark:bg-slate-800 border-2 border-primary rounded-2xl flex flex-col items-center justify-center p-8 shadow-xl rotate-y-180",
+						"absolute inset-0 backface-hidden rotate-y-180",
+						"rounded-3xl border border-primary/30 dark:border-primary/20",
+						"bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl",
+						"shadow-xl transition-all duration-300",
+						"flex flex-col items-center justify-center p-8",
 						!isFlipped ? "invisible pointer-events-none" : "visible",
 					)}
 				>
-					<div className="text-lg text-center mb-6 whitespace-pre-wrap overflow-y-auto w-full flex-1 flex flex-col justify-center leading-relaxed">
-						{card.content.meaning}
+					{/* Inner Highlight */}
+					<div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent pointer-events-none rounded-3xl" />
+
+					<div className="relative z-10 flex flex-col items-center justify-center w-full h-full">
+						<div className="text-lg md:text-xl text-center mb-6 whitespace-pre-wrap overflow-y-auto w-full flex-1 flex flex-col justify-center leading-relaxed text-slate-700 dark:text-slate-200 scrollbar-hide">
+							{card.content.meaning}
+						</div>
+
+						<GlassButton
+							variant="outline"
+							size="sm"
+							onClick={handlePlayAudio}
+							className="gap-2 shrink-0 mt-auto rounded-full"
+						>
+							<Volume2 className="h-4 w-4" />
+							{card.content.audioUrl
+								? t("quiz.flashcard.play_audio", "Play Audio")
+								: t("quiz.flashcard.tts", "Read (TTS)")}
+						</GlassButton>
 					</div>
-
-					<Button
-						variant="outline"
-						size="sm"
-						onClick={handlePlayAudio}
-						className="gap-2 shrink-0 mt-auto"
-					>
-						<Volume2 className="h-4 w-4" />
-						{card.content.audioUrl ? "播放發音" : "朗讀 (TTS)"}
-					</Button>
 				</div>
-			</div>
+			</button>
 
-			{/* 評分按鈕 (優化顏色) */}
+			{/* Rating Area */}
 			{isFlipped && (
-				// 使用 absolute positioning 讓按鈕懸浮在卡片下方，不影響卡片本身的置中
-				<div className="absolute -bottom-20 left-0 right-0 flex justify-center gap-6 animate-in fade-in slide-in-from-top-2">
-					{/* 忘記了：使用 Rose 色系，實心背景 */}
-					<Button
-						className="w-32 bg-rose-500 hover:bg-rose-600 text-white border-rose-600 shadow-md font-bold text-lg h-12"
+				<div className="absolute -bottom-24 left-0 right-0 flex justify-center gap-6 animate-in fade-in slide-in-from-top-4 duration-300 z-20">
+					{/* Forgot Option */}
+					<GlassButton
+						className="w-36 h-14 bg-rose-500/90 hover:bg-rose-600 text-white border-rose-400 shadow-lg shadow-rose-500/20 rounded-2xl"
 						onClick={() => onRate(false)}
 					>
-						<span className="mr-2 opacity-70 text-sm font-normal">1</span>{" "}
-						忘記了
-					</Button>
+						<div className="flex flex-col items-center">
+							<span className="text-lg font-bold">
+								{t("quiz.flashcard.forgot", "Forgot")}
+							</span>
+							<span className="text-[10px] opacity-80 font-mono">key: 1</span>
+						</div>
+					</GlassButton>
 
-					{/* 記住了：使用 Emerald 色系，實心背景 */}
-					<Button
-						className="w-32 bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-700 shadow-md font-bold text-lg h-12"
+					{/* Remembered Option */}
+					<GlassButton
+						className="w-36 h-14 bg-emerald-600/90 hover:bg-emerald-700 text-white border-emerald-500 shadow-lg shadow-emerald-600/20 rounded-2xl"
 						onClick={() => onRate(true)}
 					>
-						<span className="mr-2 opacity-70 text-sm font-normal">2</span>{" "}
-						記住了
-					</Button>
+						<div className="flex flex-col items-center">
+							<span className="text-lg font-bold">
+								{t("quiz.flashcard.remembered", "Remembered")}
+							</span>
+							<span className="text-[10px] opacity-80 font-mono">key: 2</span>
+						</div>
+					</GlassButton>
 				</div>
 			)}
 		</div>

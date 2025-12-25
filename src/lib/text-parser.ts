@@ -1,3 +1,5 @@
+import i18next from "i18next";
+
 export interface ParsedQuestion {
 	stem: string;
 	options: [string, string, string, string];
@@ -7,7 +9,7 @@ export interface ParsedQuestion {
 
 export const TextParser = {
 	parseChoiceQuestion: (text: string): ParsedQuestion => {
-		// 1. 過濾引用
+		// 1. Filter citations
 		const cleanText = text.replace(/\[\[\d+\]\([^)]+\)\]/g, "");
 
 		const lines = cleanText
@@ -20,15 +22,25 @@ export const TextParser = {
 		const definitionLines: string[] = [];
 		let correctIndex = -1;
 
-		let state = 0; // 0=題目, 1=選項, 2=解析
+		let state = 0; // 0=Stem, 1=Options, 2=Explanation
 
 		const optionStartRegex = /^[(（[]?[A-Da-d][)）\].][:：]?\s*/;
-		const ansLineRegex =
-			/^(?:答案|Ans|ANS|Answer)[:：]?\s*[(（[]?([A-Da-d])[)）\]]?/;
-		const defLineRegex = /^(?:解析|詳解|說明|釋義|Explanation)[:：]/;
+
+		// Use i18n for regex prefixes if available, fallback to hardcoded defaults
+		const ansPrefixes = i18next.t("parser.ans_prefix", {
+			defaultValue: "答案|Ans|ANS|Answer",
+		});
+		const defPrefixes = i18next.t("parser.def_prefix", {
+			defaultValue: "解析|詳解|說明|釋義|Explanation",
+		});
+
+		const ansLineRegex = new RegExp(
+			`^(?:${ansPrefixes})[:：]?\\s*[(（[]?([A-Da-d])[)）\\]]?`,
+		);
+		const defLineRegex = new RegExp(`^(?:${defPrefixes})[:：]`);
 
 		for (const line of lines) {
-			// A. 檢查答案行
+			// A. Check for Answer line
 			const ansMatch = line.match(ansLineRegex);
 			if (ansMatch) {
 				const char = ansMatch[1].toUpperCase();
@@ -36,9 +48,9 @@ export const TextParser = {
 				if (map[char] !== undefined) {
 					correctIndex = map[char];
 				}
-				// 檢查答案行後是否緊跟著解析文字
+				// Check if explanation text follows answer on the same line
 				const afterAns = line.replace(ansMatch[0], "").trim();
-				// ▼▼▼ 修正：只有內容不為空才加入 ▼▼▼
+				// FIXED: Only add if content is not empty
 				if (afterAns) {
 					state = 2;
 					definitionLines.push(afterAns);
@@ -46,10 +58,10 @@ export const TextParser = {
 				continue;
 			}
 
-			// B. 檢查解析行
+			// B. Check for Explanation line
 			if (defLineRegex.test(line)) {
 				state = 2;
-				// ▼▼▼ 修正：去除前綴後，只有內容不為空才加入 ▼▼▼
+				// FIXED: Only add after removing prefix if content is not empty
 				const content = line.replace(defLineRegex, "").trim();
 				if (content) {
 					definitionLines.push(content);
@@ -57,7 +69,7 @@ export const TextParser = {
 				continue;
 			}
 
-			// C. 檢查選項
+			// C. Check for Options
 			const optMatch = line.match(optionStartRegex);
 			if (optMatch) {
 				state = 1;
@@ -70,7 +82,7 @@ export const TextParser = {
 				continue;
 			}
 
-			// D. 歸類內容
+			// D. Classify content
 			if (state === 0) {
 				stemLines.push(line);
 			} else if (state === 1) {
@@ -86,7 +98,7 @@ export const TextParser = {
 			stem: stemLines.join("\n"),
 			options,
 			correctIndex,
-			definition: definitionLines.join("\n").trim(), // 最後再 trim 一次保險
+			definition: definitionLines.join("\n").trim(), // Final trim for safety
 		};
 	},
 };

@@ -1,8 +1,10 @@
 import { useRegisterSW } from "virtual:pwa-register/react";
 import { useCallback, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
 export function PWAReloadPrompt() {
+	const { t } = useTranslation();
 	const {
 		offlineReady: [offlineReady, setOfflineReady],
 		needRefresh: [needRefresh, setNeedRefresh],
@@ -21,36 +23,45 @@ export function PWAReloadPrompt() {
 		setNeedRefresh(false);
 	}, [setOfflineReady, setNeedRefresh]);
 
-	// 當 App 準備好離線使用時，跳一個通知 (只顯示一次)
+	// Show notification when app is ready for offline use (show once)
 	useEffect(() => {
 		if (offlineReady) {
-			toast.success("App 已準備好離線使用！", {
-				description: "現在即使沒有網路，您也可以開啟 App。",
-				action: {
-					label: "知道了",
-					onClick: close,
+			toast.success(
+				t("pwa.offline_ready_title", "App is ready for offline use!"),
+				{
+					description: t(
+						"pwa.offline_ready_desc",
+						"You can now use the app even without internet.",
+					),
+					action: {
+						label: t("pwa.offline_ready_action", "Got it"),
+						onClick: close,
+					},
 				},
-			});
+			);
 		}
-	}, [offlineReady, close]);
+	}, [offlineReady, close, t]);
 
-	// 當有新版本時，跳一個通知要求更新
+	// Show notification asking for update when new version is available
 	useEffect(() => {
 		if (needRefresh) {
-			toast.info("發現新版本", {
-				description: "請點擊更新以載入最新功能。",
-				duration: Infinity, // 不自動消失
+			toast.info(t("pwa.update_available_title", "New version available"), {
+				description: t(
+					"pwa.update_available_desc",
+					"Click update to load the latest features.",
+				),
+				duration: Infinity,
 				action: {
-					label: "立即更新",
+					label: t("pwa.update_action", "Update Now"),
 					onClick: () => updateServiceWorker(true),
 				},
 				cancel: {
-					label: "稍後",
+					label: t("pwa.update_later", "Later"),
 					onClick: close,
 				},
 			});
 		}
-	}, [needRefresh, updateServiceWorker, close]);
+	}, [needRefresh, updateServiceWorker, close, t]);
 
-	return null; // 這個組件不需要渲染任何 DOM，它只負責觸發 Toast
+	return null; // This component doesn't render any DOM; it only triggers toasts
 }

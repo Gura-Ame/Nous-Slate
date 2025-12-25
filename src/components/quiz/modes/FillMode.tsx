@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Button } from "@/components/ui/button";
+import { useTranslation } from "react-i18next";
+import { GlassButton } from "@/components/ui/glass/GlassButton";
 import { cn } from "@/lib/utils";
 import type { Card } from "@/types/schema";
 
@@ -10,26 +11,26 @@ interface FillModeProps {
 }
 
 export function FillMode({ card, status, onSubmit }: FillModeProps) {
+	const { t } = useTranslation();
 	const [input, setInput] = useState("");
 	const inputRef = useRef<HTMLInputElement>(null);
 
-	// 1. 初始化
+	// 1. Initialization
 	const [prevCardId, setPrevCardId] = useState(card.id);
-	
-	// 1. 初始化
+
 	if (card.id !== prevCardId) {
 		setPrevCardId(card.id);
 		setInput("");
 	}
 
 	useEffect(() => {
-		// 自動 Focus
+		// Auto Focus
 		if (status === "question") {
 			setTimeout(() => inputRef.current?.focus(), 50);
 		}
 	}, [status]);
 
-	// 2. 處理提交
+	// 2. Handle Submit
 	const handleSubmit = (e?: React.FormEvent) => {
 		e?.preventDefault();
 		if (status !== "question") return;
@@ -37,30 +38,30 @@ export function FillMode({ card, status, onSubmit }: FillModeProps) {
 		onSubmit(isCorrect);
 	};
 
-	// 3. 解析題目
+	// 3. Parse Question
 	const parts = useMemo(
 		() => card.content.stem.split("___"),
 		[card.content.stem],
 	);
 
-	// 4. 計算輸入框動態寬度
+	// 4. Calculate Dynamic Input Width
 	const answerStr = card.content.answer || "";
 	const widthStyle = useMemo(() => {
-		const len = Math.max(1, answerStr.length); // 至少 1 字寬
-		// 簡單判斷：是否有中文字 (中文字寬度約為英文 2 倍)
+		const len = Math.max(1, answerStr.length); // At least 1 char width
+		// Simple check: has Chinese characters (width approx 2x English)
 		const hasChinese = /[\u4e00-\u9fa5]/.test(answerStr);
 
-		// 使用 ch 單位 (字元寬度)
-		// 中文: 每個字給 2.2ch，英文給 1.2ch，最後加一點 buffer
+		// Use ch unit (character width)
+		// Chinese: 2.2ch per char, English: 1.2ch, plus a bit of buffer
 		const widthCh = len * (hasChinese ? 2.5 : 1.5) + 1;
 
 		return { width: `${widthCh}ch` };
 	}, [answerStr]);
 
-	// Input 樣式
+	// Input Styles
 	const inputClass = cn(
 		"inline-block mx-1 h-auto border-b-2 border-t-0 border-x-0 rounded-none px-1 py-0 text-center font-bold inherit focus-visible:ring-0 focus-visible:border-primary bg-transparent transition-colors outline-none",
-		// 狀態顏色
+		// Status Colors
 		status === "success" && "border-emerald-500 text-emerald-600",
 		status === "failure" && "border-destructive text-destructive",
 		status === "question" &&
@@ -70,27 +71,28 @@ export function FillMode({ card, status, onSubmit }: FillModeProps) {
 	return (
 		<form
 			onSubmit={handleSubmit}
-			className="w-full max-w-3xl flex flex-col items-center gap-8"
+			className="w-full max-w-3xl flex flex-col items-center gap-8 animate-in fade-in zoom-in-50 duration-500"
 		>
-			{/* 題目顯示區 (Text 放大) */}
-			<div className="text-3xl md:text-5xl font-serif font-bold text-slate-800 dark:text-slate-100 leading-normal text-center">
+			{/* Question Display Area (Larger Text) */}
+			<div className="text-3xl md:text-5xl font-serif font-bold text-slate-800 dark:text-slate-100 leading-normal text-center drop-shadow-sm">
 				{parts.map((part, index) => (
 					<span key={`${card.id}-part-${index}`}>
 						{part}
-						{/* 插入 Input */}
+						{/* Insert Input */}
 						{index < parts.length - 1 && (
 							<input
 								ref={index === 0 ? inputRef : null}
-								id={`fill-input-${card.id}`} // 解決 Issue 1
-								name="fill-answer" // 解決 Issue 1
+								id={`fill-input-${card.id}`} // Fix Issue 1
+								name="fill-answer" // Fix Issue 1
 								type="text"
 								autoComplete="off"
 								className={inputClass}
-								style={widthStyle} // 套用動態寬度
+								style={widthStyle} // Apply dynamic width
 								value={input}
 								onChange={(e) => setInput(e.target.value)}
 								onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
 								disabled={status !== "question"}
+								placeholder={status === "question" ? "?" : ""}
 							/>
 						)}
 					</span>
@@ -98,9 +100,14 @@ export function FillMode({ card, status, onSubmit }: FillModeProps) {
 			</div>
 
 			{status === "question" && (
-				<Button type="submit" size="lg" disabled={!input.trim()}>
-					提交答案
-				</Button>
+				<GlassButton
+					type="submit"
+					size="lg"
+					disabled={!input.trim()}
+					className="min-w-[200px]"
+				>
+					{t("quiz.feedback.submit", "Submit")}
+				</GlassButton>
 			)}
 		</form>
 	);

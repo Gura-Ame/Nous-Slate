@@ -1,5 +1,6 @@
 import { doc, getDoc } from "firebase/firestore";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { db } from "@/lib/firebase";
@@ -19,8 +20,8 @@ export function OwnerInfo({ userId, showAvatar = true }: OwnerInfoProps) {
 	const [loading, setLoading] = useState(true);
 
 	useEffect(() => {
-		// 簡單的快取機制：如果已經抓過就不抓 (可選)
-		// 這裡直接實作 Fetch
+		// Simple caching mechanism: don't refetch if already fetched (optional)
+		// Fetch implementation here
 		const fetchUser = async () => {
 			try {
 				const docRef = doc(db, "users", userId);
@@ -40,12 +41,18 @@ export function OwnerInfo({ userId, showAvatar = true }: OwnerInfoProps) {
 		}
 	}, [userId]);
 
+	const { t } = useTranslation();
+
 	if (loading) {
 		return <Skeleton className="h-4 w-20" />;
 	}
 
 	if (!profile) {
-		return <span className="text-muted-foreground">未知使用者</span>;
+		return (
+			<span className="text-muted-foreground">
+				{t("common.unknown_user", "Unknown User")}
+			</span>
+		);
 	}
 
 	return (

@@ -6,20 +6,20 @@ export function speak(text: string, lang?: string) {
 		return;
 	}
 
-	// 停止目前正在講的話 (避免連點時重疊)
+	// Stop current speech (avoids overlapping when clicked rapidly)
 	window.speechSynthesis.cancel();
 
 	const utterance = new SpeechSynthesisUtterance(text);
 
-	// 如果沒有指定語言，嘗試自動偵測
+	// If no language specified, attempt auto-detection
 	if (!lang) {
-		// 簡單判斷：如果包含中文字元，就用中文，否則預設英文
+		// Simple heuristic: if contains Chinese characters, use zh-TW, else default to en-US
 		const hasChinese = /[\u4e00-\u9fa5]/.test(text);
 		lang = hasChinese ? "zh-TW" : "en-US";
 	}
 
 	utterance.lang = lang;
-	utterance.rate = 0.8; // 稍微慢一點點，比較清楚
+	utterance.rate = 0.8; // Set slightly slower for better clarity
 
 	window.speechSynthesis.speak(utterance);
 }

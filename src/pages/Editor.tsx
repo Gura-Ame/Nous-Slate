@@ -9,16 +9,19 @@ import {
 	X,
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
-import { DeckCard } from "@/components/editor/DeckCard"; // 確保您已建立此組件
 import { DeckDialog } from "@/components/editor/DeckDialog";
-import { FolderDialog } from "@/components/editor/FolderDialog"; // 確保您已建立此組件
+import { FolderDialog } from "@/components/editor/FolderDialog";
 import { ImportDeckDialog } from "@/components/editor/ImportDeckDialog";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { DeckCard } from "@/components/shared/DeckCard";
 import { PageLoading } from "@/components/shared/PageLoading";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { GlassButton } from "@/components/ui/glass/GlassButton";
+import { GlassPage } from "@/components/ui/glass/GlassPage";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
 import { DataService } from "@/services/data-service";
@@ -28,6 +31,7 @@ import { PdfService } from "@/services/pdf-service";
 import type { Deck, Folder as FolderType } from "@/types/schema";
 
 export default function Editor() {
+	const { t } = useTranslation();
 	const { user } = useAuth();
 	const [decks, setDecks] = useState<Deck[]>([]);
 	const [folders, setFolders] = useState<FolderType[]>([]);
@@ -48,7 +52,7 @@ export default function Editor() {
 
 	const toggleSelectionMode = () => {
 		if (isSelectionMode) {
-			// 取消模式時清空
+			// Clear on cancel
 			setIsSelectionMode(false);
 			setSelectedDeckIds(new Set());
 		} else {
@@ -56,7 +60,7 @@ export default function Editor() {
 		}
 	};
 
-	// 單選/取消單選 Deck
+	// Select/Deselect single deck
 	const toggleSelectDeck = (deckId: string) => {
 		const newSet = new Set(selectedDeckIds);
 		if (newSet.has(deckId)) newSet.delete(deckId);
@@ -64,19 +68,22 @@ export default function Editor() {
 		setSelectedDeckIds(newSet);
 	};
 
-	// 匯出 PDF
+	// Export PDF
 	const handleExportPdf = async () => {
-		if (selectedDeckIds.size === 0) return toast.error("請至少選擇一個題庫");
+		if (selectedDeckIds.size === 0)
+			return toast.error(
+				t("editor.select_at_least_one", "Please select at least one deck."),
+			);
 
 		const selectedDecks = decks.filter((d) => selectedDeckIds.has(d.id));
-		toast.info("正在準備列印...");
+		toast.info(t("common.loading", "Preparing for print..."));
 		await PdfService.generatePrintView(selectedDecks);
 
-		// 匯出後退出選取模式
+		// Exit selection mode after export
 		toggleSelectionMode();
 	};
 
-	// 1. 載入資料 (Deck + Folders)
+	// 1. Load Data (Deck + Folders)
 	const fetchData = useCallback(async () => {
 		if (!user) return;
 		setLoading(true);
@@ -89,11 +96,11 @@ export default function Editor() {
 			setFolders(foldersData);
 		} catch (error) {
 			console.error(error);
-			toast.error("載入失敗");
+			toast.error(t("common.error_loading", "Loading failed"));
 		} finally {
 			setLoading(false);
 		}
-	}, [user]);
+	}, [user, t]);
 
 	useEffect(() => {
 		fetchData();
@@ -102,14 +109,22 @@ export default function Editor() {
 	// --- Handlers ---
 
 	const handleDeleteDeck = async (deckId: string) => {
-		if (!confirm("確定要刪除這個題庫嗎？此操作無法復原。")) return;
+		if (
+			!confirm(
+				t(
+					"editor.confirm_delete_deck",
+					"Are you sure you want to delete this deck? This action cannot be undone.",
+				),
+			)
+		)
+			return;
 		try {
 			await DeckService.deleteDeck(deckId);
-			toast.success("刪除成功");
+			toast.success(t("editor.delete_success", "Deleted successfully"));
 			fetchData();
 		} catch (error) {
 			console.error(error);
-			toast.error("刪除失敗");
+			toast.error(t("common.error", "Delete failed"));
 		}
 	};
 
@@ -117,29 +132,32 @@ export default function Editor() {
 		if (!user) return;
 		if (
 			!confirm(
-				"確定刪除資料夾？\n注意：內部的題庫不會被刪除，而是會移至「未分類」。",
+				t(
+					"editor.delete_folder_confirm",
+					"Are you sure you want to delete this folder?\nNote: Decks inside will NOT be deleted; they will be moved to 'Uncategorized'.",
+				),
 			)
 		)
 			return;
 		try {
 			await DeckService.resetDecksFolder(user.uid, folderId);
 			await FolderService.deleteFolder(folderId);
-			toast.success("資料夾已刪除");
+			toast.success(t("editor.delete_success", "Folder deleted"));
 			fetchData();
 		} catch (e) {
 			console.error(e);
-			toast.error("刪除失敗");
+			toast.error(t("common.error", "Delete failed"));
 		}
 	};
 
 	const handleMoveDeck = async (deckId: string, folderId: string | null) => {
 		try {
 			await DeckService.moveDeckToFolder(deckId, folderId);
-			toast.success("移動成功");
+			toast.success(t("editor.move_success", "Moved successfully"));
 			fetchData();
 		} catch (error) {
 			console.error(error);
-			toast.error("移動失敗");
+			toast.error(t("common.error", "Move failed"));
 		}
 	};
 
@@ -162,7 +180,7 @@ export default function Editor() {
 		try {
 			if (editingFolder) {
 				await FolderService.updateFolder(editingFolder.id, data);
-				toast.success("資料夾已更新");
+				toast.success(t("common.save", "Folder updated"));
 			} else {
 				await FolderService.createFolder(
 					user.uid,
@@ -170,12 +188,12 @@ export default function Editor() {
 					data.color,
 					data.isPublic,
 				);
-				toast.success("資料夾已建立");
+				toast.success(t("common.save", "Folder created"));
 			}
 			fetchData();
 		} catch (error) {
 			console.error(error);
-			toast.error("操作失敗");
+			toast.error(t("common.error", "Operation failed"));
 		}
 	};
 
@@ -187,186 +205,207 @@ export default function Editor() {
 		);
 	};
 
-	if (loading) return <PageLoading message="讀取資料中..." />;
+	if (loading)
+		return <PageLoading message={t("common.loading", "Loading data...")} />;
 
 	return (
-		<div className="container mx-auto p-8 space-y-10">
-			<PageHeader title="創作後台" description="管理您的題庫與資料夾分類。">
-				<div className="flex gap-2 flex-wrap">
-					{isSelectionMode ? (
-						<>
-							<Button
-								variant="default"
-								onClick={handleExportPdf}
-								className="bg-purple-600 hover:bg-purple-700"
+		<GlassPage className="flex justify-center">
+			<div className="container p-8 space-y-10 max-w-7xl">
+				<PageHeader
+					title={t("editor.title", "Creator Studio")}
+					description={t(
+						"editor.subtitle",
+						"Manage your decks and organize them into folders.",
+					)}
+				>
+					<div className="flex gap-2 flex-wrap">
+						{isSelectionMode ? (
+							<>
+								<GlassButton
+									variant="primary"
+									onClick={handleExportPdf}
+									className="bg-purple-600 hover:bg-purple-700 border-none text-white shadow-purple-500/20"
+								>
+									<Printer className="mr-2 h-4 w-4" />{" "}
+									{t("editor.print_pdf", "Print / PDF")} ({selectedDeckIds.size}
+									)
+								</GlassButton>
+								<Button variant="outline" onClick={toggleSelectionMode}>
+									<X className="mr-2 h-4 w-4" />{" "}
+									{t("editor.cancel_select", "Cancel Selection")}
+								</Button>
+							</>
+						) : (
+							<>
+								<Button variant="outline" onClick={toggleSelectionMode}>
+									<CheckSquare className="mr-2 h-4 w-4" />{" "}
+									{t("editor.multi_select_export", "Select to Export")}
+								</Button>
+								<ImportDeckDialog onSuccess={fetchData} />
+								<Button variant="outline" onClick={() => openFolderDialog()}>
+									<FolderPlus className="mr-2 h-4 w-4" />{" "}
+									{t("editor.new_folder", "New Folder")}
+								</Button>
+								<GlassButton onClick={() => openDeckDialog()}>
+									<Plus className="mr-2 h-4 w-4" />{" "}
+									{t("editor.new_deck", "New Deck")}
+								</GlassButton>
+							</>
+						)}
+					</div>
+				</PageHeader>
+
+				{/* Empty State */}
+				{decks.length === 0 && folders.length === 0 && (
+					<div className="py-20 text-center text-slate-500 border-2 border-dashed rounded-3xl bg-slate-50/50 dark:bg-slate-900/50 backdrop-blur-sm">
+						<p>{t("editor.no_decks", "No decks yet.")}</p>
+					</div>
+				)}
+
+				<div className="space-y-12">
+					{/* 1. Render Folders Area */}
+					{folders.map((folder) => {
+						const folderDecks = getDecksInFolder(folder.id);
+						return (
+							<section
+								key={folder.id}
+								className="space-y-4 animate-in fade-in duration-500"
 							>
-								<Printer className="mr-2 h-4 w-4" /> 列印 / 轉 PDF (
-								{selectedDeckIds.size})
-							</Button>
-							<Button variant="outline" onClick={toggleSelectionMode}>
-								<X className="mr-2 h-4 w-4" /> 取消選取
-							</Button>
-						</>
-					) : (
-						<>
-							<Button variant="outline" onClick={toggleSelectionMode}>
-								<CheckSquare className="mr-2 h-4 w-4" /> 多選匯出
-							</Button>
-							<ImportDeckDialog onSuccess={fetchData} />
-							<Button variant="outline" onClick={() => openFolderDialog()}>
-								<FolderPlus className="mr-2 h-4 w-4" /> 新增資料夾
-							</Button>
-							<Button onClick={() => openDeckDialog()}>
-								<Plus className="mr-2 h-4 w-4" /> 建立新題庫
-							</Button>
-						</>
+								<div className="flex items-center justify-between border-b pb-2 dark:border-slate-800">
+									<div className="flex items-center gap-3">
+										<div
+											className={cn(
+												"p-2 rounded-lg text-white shadow-sm",
+												folder.color || "bg-blue-500",
+											)}
+										>
+											<FolderOpen className="h-5 w-5" />
+										</div>
+
+										<div className="flex flex-col">
+											<div className="flex items-center gap-2">
+												<h3 className="text-xl font-bold text-slate-800 dark:text-slate-100">
+													{folder.name}
+												</h3>
+												{folder.isPublic && (
+													<Badge
+														variant="secondary"
+														className="text-[10px] bg-sky-100 text-sky-700 h-5 px-1.5"
+													>
+														Public
+													</Badge>
+												)}
+											</div>
+											<span className="text-xs text-muted-foreground">
+												{t("editor.folder_count", {
+													count: folderDecks.length,
+												})}
+											</span>
+										</div>
+									</div>
+
+									<div className="flex gap-2">
+										<Button
+											variant="ghost"
+											size="sm"
+											onClick={() =>
+												user && DataService.exportFolder(user.uid, folder)
+											}
+											title={t("editor.export_folder", "Export This Folder")}
+										>
+											<Download className="h-4 w-4 text-slate-500" />
+										</Button>
+										<Button
+											variant="ghost"
+											size="sm"
+											onClick={() => openFolderDialog(folder)}
+										>
+											{t("common.edit", "Edit")}
+										</Button>
+										<Button
+											variant="ghost"
+											size="sm"
+											className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+											onClick={() => handleDeleteFolder(folder.id)}
+										>
+											{t("common.delete", "Delete")}
+										</Button>
+									</div>
+								</div>
+
+								{folderDecks.length === 0 ? (
+									<div className="text-sm text-muted-foreground py-8 text-center bg-slate-50/30 dark:bg-slate-900/30 rounded-lg border border-dashed border-slate-200 dark:border-slate-800">
+										{t("editor.empty_folder", "This folder is empty.")}
+									</div>
+								) : (
+									<div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+										{folderDecks.map((deck) => (
+											<DeckCard
+												key={deck.id}
+												deck={deck}
+												variant="editor"
+												folders={folders}
+												onEdit={() => openDeckDialog(deck)}
+												onDelete={() => handleDeleteDeck(deck.id)}
+												onMove={handleMoveDeck}
+												isSelectionMode={isSelectionMode}
+												isSelected={selectedDeckIds.has(deck.id)}
+												onToggleSelect={() => toggleSelectDeck(deck.id)}
+											/>
+										))}
+									</div>
+								)}
+							</section>
+						);
+					})}
+
+					{/* 2. Uncategorized Area */}
+					{getDecksInFolder(null).length > 0 && (
+						<section className="space-y-4 animate-in fade-in duration-700">
+							<div className="flex items-center gap-2 border-b pb-2 dark:border-slate-800 mt-8">
+								<Folder className="h-5 w-5 text-slate-400" />
+								<h3 className="text-xl font-bold text-slate-600 dark:text-slate-300">
+									{t("editor.uncategorized_decks", "Uncategorized Decks")}
+								</h3>
+								<span className="text-sm text-muted-foreground ml-2">
+									({getDecksInFolder(null).length})
+								</span>
+							</div>
+							<div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+								{getDecksInFolder(null).map((deck) => (
+									<DeckCard
+										key={deck.id}
+										deck={deck}
+										variant="editor"
+										folders={folders}
+										onEdit={() => openDeckDialog(deck)}
+										onDelete={() => handleDeleteDeck(deck.id)}
+										onMove={handleMoveDeck}
+										isSelectionMode={isSelectionMode}
+										isSelected={selectedDeckIds.has(deck.id)}
+										onToggleSelect={() => toggleSelectDeck(deck.id)}
+									/>
+								))}
+							</div>
+						</section>
 					)}
 				</div>
-			</PageHeader>
 
-			{/* 空狀態 */}
-			{decks.length === 0 && folders.length === 0 && (
-				<div className="py-20 text-center text-slate-500 border-2 border-dashed rounded-xl bg-slate-50/50 dark:bg-slate-900/50">
-					<p>還沒有任何題庫，點擊右上角開始建立吧！</p>
-				</div>
-			)}
+				{/* Dialogs */}
+				<DeckDialog
+					open={dialogOpen}
+					onOpenChange={setDialogOpen}
+					deck={editingDeck}
+					onSuccess={fetchData}
+				/>
 
-			<div className="space-y-12">
-				{/* 1. 渲染資料夾區域 */}
-				{folders.map((folder) => {
-					const folderDecks = getDecksInFolder(folder.id);
-					return (
-						<section key={folder.id} className="space-y-4 animate-in fade-in">
-							<div className="flex items-center justify-between border-b pb-2 dark:border-slate-800">
-								<div className="flex items-center gap-3">
-									<div
-										className={cn(
-											"p-2 rounded-lg text-white shadow-sm",
-											folder.color || "bg-blue-500",
-										)}
-									>
-										<FolderOpen className="h-5 w-5" />
-									</div>
-
-									<div className="flex flex-col">
-										<div className="flex items-center gap-2">
-											<h3 className="text-xl font-bold text-slate-800 dark:text-slate-100">
-												{folder.name}
-											</h3>
-											{folder.isPublic && (
-												<Badge
-													variant="secondary"
-													className="text-[10px] bg-sky-100 text-sky-700 h-5 px-1.5"
-												>
-													公開
-												</Badge>
-											)}
-										</div>
-										<span className="text-xs text-muted-foreground">
-											{folderDecks.length} 個題庫
-										</span>
-									</div>
-								</div>
-
-								<div className="flex gap-2">
-									<Button
-										variant="ghost"
-										size="sm"
-										onClick={() =>
-											user && DataService.exportFolder(user.uid, folder)
-										}
-										title="匯出此資料夾"
-									>
-										<Download className="h-4 w-4 text-slate-500" />
-									</Button>
-									<Button
-										variant="ghost"
-										size="sm"
-										onClick={() => openFolderDialog(folder)}
-									>
-										編輯
-									</Button>
-									<Button
-										variant="ghost"
-										size="sm"
-										className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
-										onClick={() => handleDeleteFolder(folder.id)}
-									>
-										刪除
-									</Button>
-								</div>
-							</div>
-
-							{folderDecks.length === 0 ? (
-								<div className="text-sm text-muted-foreground py-8 text-center bg-slate-50/30 dark:bg-slate-900/30 rounded-lg border border-dashed border-slate-200 dark:border-slate-800">
-									此資料夾是空的，請將題庫移動至此。
-								</div>
-							) : (
-								<div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-									{folderDecks.map((deck) => (
-										<DeckCard
-											key={deck.id}
-											deck={deck}
-											folders={folders}
-											onEdit={() => openDeckDialog(deck)}
-											onDelete={() => handleDeleteDeck(deck.id)}
-											onMove={handleMoveDeck}
-											isSelectionMode={isSelectionMode}
-											isSelected={selectedDeckIds.has(deck.id)}
-											onToggleSelect={() => toggleSelectDeck(deck.id)}
-										/>
-									))}
-								</div>
-							)}
-						</section>
-					);
-				})}
-
-				{/* 2. 未分類區域 */}
-				{getDecksInFolder(null).length > 0 && (
-					<section className="space-y-4 animate-in fade-in">
-						<div className="flex items-center gap-2 border-b pb-2 dark:border-slate-800 mt-8">
-							<Folder className="h-5 w-5 text-slate-400" />
-							<h3 className="text-xl font-bold text-slate-600 dark:text-slate-300">
-								未分類題庫
-							</h3>
-							<span className="text-sm text-muted-foreground ml-2">
-								({getDecksInFolder(null).length})
-							</span>
-						</div>
-						<div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-							{getDecksInFolder(null).map((deck) => (
-								<DeckCard
-									key={deck.id}
-									deck={deck}
-									folders={folders}
-									onEdit={() => openDeckDialog(deck)}
-									onDelete={() => handleDeleteDeck(deck.id)}
-									onMove={handleMoveDeck}
-									isSelectionMode={isSelectionMode}
-									isSelected={selectedDeckIds.has(deck.id)}
-									onToggleSelect={() => toggleSelectDeck(deck.id)}
-								/>
-							))}
-						</div>
-					</section>
-				)}
+				<FolderDialog
+					open={folderDialogOpen}
+					onOpenChange={setFolderDialogOpen}
+					folder={editingFolder}
+					onSubmit={handleFolderSubmit}
+				/>
 			</div>
-
-			{/* Dialogs */}
-			<DeckDialog
-				open={dialogOpen}
-				onOpenChange={setDialogOpen}
-				deck={editingDeck}
-				onSuccess={fetchData}
-			/>
-
-			<FolderDialog
-				open={folderDialogOpen}
-				onOpenChange={setFolderDialogOpen}
-				folder={editingFolder}
-				onSubmit={handleFolderSubmit}
-			/>
-		</div>
+		</GlassPage>
 	);
 }

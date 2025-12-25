@@ -3,6 +3,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2, Plus } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
+// ... imports
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
@@ -21,22 +23,37 @@ import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/hooks/useAuth";
 import { DeckService } from "@/services/deck-service";
 
-// 定義表單驗證規則
-const formSchema = z.object({
-	title: z.string().min(1, "標題不能為空").max(50, "標題太長了"),
-	description: z.string().max(200, "描述太長了").optional(),
-});
+// ... imports
 
-type FormData = z.infer<typeof formSchema>;
+// Define form validation rules
+// NB: schema validation messages should also be localized, but useForm resolution happens outside component render mostly.
+// However, we can use z.string({ required_error: ... }) but translating inside schema definition requires trickery.
+// Easier to keep simple or move schema inside component (less performant but allows t).
+// For now, let's keep schema outside and just translate UI strings, or move schema inside.
+// Moving schema inside CreateDeckDialog to use t():
 
 interface Props {
-	onDeckCreated: () => void; // 成功後通知父層重整列表
+	onDeckCreated: () => void;
 }
 
 export function CreateDeckDialog({ onDeckCreated }: Props) {
+	const { t } = useTranslation();
 	const [open, setOpen] = useState(false);
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const { user } = useAuth();
+
+	const formSchema = z.object({
+		title: z
+			.string()
+			.min(1, t("create_deck.validation_title_required", "Title is required"))
+			.max(50, t("create_deck.validation_title_max", "'Title is too long'")),
+		description: z
+			.string()
+			.max(200, t("create_deck.validation_desc_max", "Description is too long"))
+			.optional(),
+	});
+
+	type FormData = z.infer<typeof formSchema>;
 
 	const {
 		register,
@@ -54,17 +71,20 @@ export function CreateDeckDialog({ onDeckCreated }: Props) {
 		try {
 			await DeckService.createDeck(user.uid, data.title, data.description);
 
-			toast.success("建立成功", {
-				description: `題庫「${data.title}」已建立。`,
+			toast.success(t("create_deck.success", "Created Successfully"), {
+				description: t("create_deck.success_desc", {
+					title: data.title,
+					defaultValue: `Deck ${data.title} has been created.`,
+				}),
 			});
 
 			setOpen(false);
 			reset();
-			onDeckCreated(); // 觸發列表更新
+			onDeckCreated();
 		} catch (error) {
 			console.error(error);
-			toast.error("建立失敗", {
-				description: "請稍後再試。",
+			toast.error(t("create_deck.error", "Creation Failed"), {
+				description: t("create_deck.error_desc", "Please try again later."),
 			});
 		} finally {
 			setIsSubmitting(false);
@@ -75,23 +95,31 @@ export function CreateDeckDialog({ onDeckCreated }: Props) {
 		<Dialog open={open} onOpenChange={setOpen}>
 			<DialogTrigger asChild>
 				<Button>
-					<Plus className="mr-2 h-4 w-4" /> 建立新題庫
+					<Plus className="mr-2 h-4 w-4" />{" "}
+					{t("create_deck.trigger_button", "Create New Deck")}
 				</Button>
 			</DialogTrigger>
 			<DialogContent className="sm:max-w-[425px]">
 				<form onSubmit={handleSubmit(onSubmit)}>
 					<DialogHeader>
-						<DialogTitle>建立新題庫</DialogTitle>
+						<DialogTitle>
+							{t("create_deck.title", "Create New Deck")}
+						</DialogTitle>
 						<DialogDescription>
-							建立一個新的單元來分類您的卡片。例如：「國一第一課」、「成語集錦」。
+							{t("create_deck.desc", "Create a new unit...")}
 						</DialogDescription>
 					</DialogHeader>
 					<div className="grid gap-4 py-4">
 						<div className="grid gap-2">
-							<Label htmlFor="title">標題</Label>
+							<Label htmlFor="title">
+								{t("create_deck.label_title", "Title")}
+							</Label>
 							<Input
 								id="title"
-								placeholder="例如：基礎注音符號"
+								placeholder={t(
+									"create_deck.placeholder_title",
+									"E.g.: Basic Bopomofo",
+								)}
 								{...register("title")}
 							/>
 							{errors.title && (
@@ -99,10 +127,15 @@ export function CreateDeckDialog({ onDeckCreated }: Props) {
 							)}
 						</div>
 						<div className="grid gap-2">
-							<Label htmlFor="description">描述 (選填)</Label>
+							<Label htmlFor="description">
+								{t("create_deck.label_desc", "Description (Optional)")}
+							</Label>
 							<Textarea
 								id="description"
-								placeholder="簡單描述這個題庫的內容..."
+								placeholder={t(
+									"create_deck.placeholder_desc",
+									"Briefly describe...",
+								)}
 								{...register("description")}
 							/>
 							{errors.description && (
@@ -117,7 +150,7 @@ export function CreateDeckDialog({ onDeckCreated }: Props) {
 							{isSubmitting && (
 								<Loader2 className="mr-2 h-4 w-4 animate-spin" />
 							)}
-							建立
+							{t("create_deck.submit", "Create")}
 						</Button>
 					</DialogFooter>
 				</form>

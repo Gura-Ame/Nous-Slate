@@ -45,7 +45,7 @@ export const StatsService = {
 		const now = new Date();
 		const todayStart = startOfDay(now);
 
-		// 1. 總題庫數
+		// 1. Total decks count
 		const decksQuery = query(
 			collection(db, "decks"),
 			where("ownerId", "==", userId),
@@ -53,7 +53,7 @@ export const StatsService = {
 		const decksSnapshot = await getCountFromServer(decksQuery);
 		const totalDecks = decksSnapshot.data().count;
 
-		// 2. 總複習次數
+		// 2. Total reviews count
 		const reviewsRef = collection(db, "reviews");
 		const userReviewsQuery = query(
 			reviewsRef,
@@ -63,7 +63,7 @@ export const StatsService = {
 		const totalReviewsSnapshot = await getCountFromServer(userReviewsQuery);
 		const totalReviews = totalReviewsSnapshot.data().count;
 
-		// 3. 今日複習數 (精確計算)
+		// 3. Today's review count
 		const todayQuery = query(
 			reviewsRef,
 			where("userId", "==", userId),
@@ -72,7 +72,7 @@ export const StatsService = {
 		const todaySnapshot = await getCountFromServer(todayQuery);
 		const todayCount = todaySnapshot.data().count;
 
-		// 4. 計算 Streak
+		// 4. Calculate streak
 		const recentSnapshot = await getDocs(query(userReviewsQuery, limit(50)));
 		const recentReviews = recentSnapshot.docs.map((doc) => {
 			const data = doc.data() as Review;
@@ -107,7 +107,7 @@ export const StatsService = {
 			}
 		}
 
-		// 5. 近期動態
+		// 5. Recent Activity
 		const recentActivity = recentReviews.slice(0, 5).map((r) => ({
 			id: r.cardId,
 			deckId: r.deckId,
@@ -124,12 +124,11 @@ export const StatsService = {
 		};
 	},
 
-	// getWeeklyChartData 保持不變...
+	// getWeeklyChartData remains unchanged...
 	getWeeklyChartData: async (
 		userId: string,
 		endDate: Date,
 	): Promise<ChartDataPoint[]> => {
-		// (省略，維持原樣)
 		const startDate = subDays(startOfDay(endDate), 6);
 		const end = endOfDay(endDate);
 

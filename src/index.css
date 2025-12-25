@@ -30,6 +30,7 @@
 	--color-accent: var(--accent);
 	--color-accent-foreground: var(--accent-foreground);
 	--color-destructive: var(--destructive);
+	--color-destructive-foreground: var(--destructive-foreground);
 	--color-border: var(--border);
 	--color-input: var(--input);
 	--color-ring: var(--ring);
@@ -46,6 +47,31 @@
 	--color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
 	--color-sidebar-border: var(--sidebar-border);
 	--color-sidebar-ring: var(--sidebar-ring);
+	--animate-blob: blob 7s infinite;
+	--animate-shimmer: shimmer 2s linear infinite;
+
+	@keyframes blob {
+		0% {
+			transform: translate(0px, 0px) scale(1);
+		}
+		33% {
+			transform: translate(30px, -50px) scale(1.1);
+		}
+		66% {
+			transform: translate(-20px, 20px) scale(0.9);
+		}
+		100% {
+			transform: translate(0px, 0px) scale(1);
+		}
+	}
+	@keyframes shimmer {
+		from {
+			transform: translateX(-100%);
+		}
+		to {
+			transform: translateX(100%);
+		}
+	}
 }
 
 :root {
@@ -137,10 +163,10 @@
 
 	::-webkit-scrollbar-thumb {
 		@apply bg-slate-300 dark:bg-slate-700;
-		/* 淺色用淺灰，深色用深灰 */
+		/* Light gray for light mode, dark gray for dark mode */
 		border-radius: 9999px;
 		border: 3px solid transparent;
-		/* 讓捲軸看起來細一點，有呼吸感 */
+		/* Make scrollbar thinner for better spacing */
 		background-clip: content-box;
 	}
 
@@ -156,8 +182,8 @@
 	}
 
 	/* 
-    十字虛線 
-    (因為已經限制在左側容器內，所以 inset: 0 剛剛好)
+    Dashed crosshair 
+    (Fits perfectly with inset: 0 as it's restricted to container)
   */
 	.bg-tian-zi-ge::after {
 		content: "";
@@ -199,7 +225,7 @@
 		width: 100%;
 		border-collapse: collapse;
 		margin: 1em 0;
-		font-size: 0.8em; /* 表格字體稍微縮小 */
+		font-size: 0.8em; /* Shrink table font size slightly */
 	}
 	.markdown-table th,
 	.markdown-table td {
@@ -212,7 +238,7 @@
 		font-weight: bold;
 	}
 
-	/* 深色模式適配 */
+	/* Dark mode adjustments */
 	.dark .markdown-table th,
 	.dark .markdown-table td {
 		border-color: var(--color-slate-600);

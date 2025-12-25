@@ -1,12 +1,13 @@
-import { lazy, Suspense } from "react"; // 1. 引入 lazy
+import { lazy, Suspense } from "react"; // 1. Import lazy
+import { useTranslation } from "react-i18next"; // Added missing import for useTranslation
 import { HashRouter, Navigate, Route, Routes } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { AuthGuard } from "@/components/layout/AuthGuard";
-import { PageLoading } from "@/components/shared/PageLoading"; // 引入 Loading
+import { PageLoading } from "@/components/shared/PageLoading"; // Import Loading
 import { PWAReloadPrompt } from "@/components/shared/PWAReloadPrompt";
 import { Toaster } from "@/components/ui/sonner";
 
-// 2. 改用 lazy import
+// 2. Use lazy import
 const Dashboard = lazy(() => import("@/pages/Dashboard"));
 const DeckEditor = lazy(() => import("@/pages/DeckEditor"));
 const Editor = lazy(() => import("@/pages/Editor"));
@@ -19,16 +20,21 @@ const AdCenter = lazy(() => import("@/pages/AdCenter"));
 const ReviewCenter = lazy(() => import("@/pages/ReviewCenter"));
 
 export default function App() {
+	const { t } = useTranslation();
 	return (
 		<HashRouter>
-			<Suspense fallback={<PageLoading message="載入頁面中..." />}>
+			<Suspense
+				fallback={
+					<PageLoading message={t("common.loading_page", "Loading page...")} />
+				}
+			>
 				<Routes>
-					{/* --- 1. 公開路由 (Public Routes) --- */}
-					{/* 這些頁面不需要登入就能訪問 */}
+					{/* --- 1. Public Routes --- */}
+					{/* These pages do not require login to access */}
 					<Route path="/login" element={<Login />} />
 
-					{/* --- 2. 受保護 + 有側邊欄 (Protected + Sidebar) --- */}
-					{/* AppLayout 內部已經包含 Auth 檢查邏輯，所以這裡直接用 AppLayout */}
+					{/* --- 2. Protected + Sidebar --- */}
+					{/* AppLayout already includes Auth check logic, so use it directly here */}
 					<Route element={<AppLayout />}>
 						<Route path="/" element={<Dashboard />} />
 						<Route path="/library" element={<Library />} />
@@ -40,8 +46,8 @@ export default function App() {
 						<Route path="/review" element={<ReviewCenter />} />
 					</Route>
 
-					{/* --- 3. 受保護 + 全螢幕 (Protected + Fullscreen) --- */}
-					{/* 這裡使用 AuthGuard 來保護路由，但不顯示 Sidebar */}
+					{/* --- 3. Protected + Fullscreen --- */}
+					{/* Use AuthGuard to protect routes without showing Sidebar */}
 					<Route element={<AuthGuard />}>
 						<Route path="/quiz/:deckId" element={<QuizSession />} />
 					</Route>

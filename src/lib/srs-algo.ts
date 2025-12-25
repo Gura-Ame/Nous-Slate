@@ -1,16 +1,16 @@
 // src/lib/srs-algo.ts
 
 export interface SRSItem {
-	interval: number; // 間隔天數 (第一次是 1)
-	repetition: number; // 連續答對次數
-	efactor: number; // 易度因子 (預設 2.5)
+	interval: number; // Interval in days (first time is 1)
+	repetition: number; // Consecutive correct count
+	efactor: number; // Easiness factor (default 2.5)
 }
 
-// 評分等級 (0-5)
-// 0-2: 忘記/錯誤 (重來)
-// 3: 困難 (Hard)
-// 4: 普通 (Good)
-// 5: 簡單 (Easy)
+// Grading scale (0-5)
+// 0-2: Forgot/Incorrect (Reset)
+// 3: Hard
+// 4: Good
+// 5: Easy
 export type Grade = 0 | 1 | 2 | 3 | 4 | 5;
 
 export const initialSRS: SRSItem = {
@@ -26,7 +26,7 @@ export function calculateSRS(current: SRSItem, grade: Grade): SRSItem {
 	let { interval, repetition, efactor } = current;
 
 	if (grade >= 3) {
-		// 答對邏輯
+		// Correct answer logic
 		if (repetition === 0) {
 			interval = 1;
 		} else if (repetition === 1) {
@@ -36,16 +36,16 @@ export function calculateSRS(current: SRSItem, grade: Grade): SRSItem {
 		}
 		repetition += 1;
 	} else {
-		// 答錯邏輯 (Reset)
+		// Incorrect answer logic (Reset)
 		repetition = 0;
 		interval = 1;
 	}
 
-	// 更新易度因子 (E-Factor)
-	// 公式: EF' = EF + (0.1 - (5 - q) * (0.08 + (5 - q) * 0.02))
+	// Update Easiness Factor (E-Factor)
+	// Formula: EF' = EF + (0.1 - (5 - q) * (0.08 + (5 - q) * 0.02))
 	efactor = efactor + (0.1 - (5 - grade) * (0.08 + (5 - grade) * 0.02));
 
-	// EF 不能小於 1.3
+	// EF cannot be less than 1.3
 	if (efactor < 1.3) efactor = 1.3;
 
 	return { interval, repetition, efactor };
